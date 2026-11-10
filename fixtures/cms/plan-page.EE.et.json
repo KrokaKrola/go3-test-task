@@ -1,0 +1,63 @@
+{
+  "id": "planpage-EE-et",
+  "market": "EE",
+  "locale": "et",
+  "updatedAt": "2026-10-12T09:30:00Z",
+  "headline": "Vali endale sobiv pakett",
+  "subhead": "Vaata seriaale ja filme kõigis oma seadmetes. Tühista igal ajal.",
+  "planCards": [
+    {
+      "planKey": "basic",
+      "title": "Basic",
+      "bullets": [
+        "1 seade korraga",
+        "Standardne pildikvaliteet",
+        "Sisaldab reklaami"
+      ],
+      "badge": "",
+      "priceLabel": "alates 7,43 € / kuu"
+    },
+    {
+      "planKey": "standard",
+      "title": "Standard",
+      "bullets": [
+        "2 seadet korraga",
+        "Full HD pildikvaliteet",
+        "Ilma reklaamita"
+      ],
+      "badge": "Populaarseim",
+      "priceLabel": "alates 10,99 € / kuu"
+    },
+    {
+      "planKey": "premium",
+      "title": "Premium",
+      "bullets": [
+        "4 seadet korraga",
+        "4K pildikvaliteet",
+        "Allalaadimised telefonis ja tahvelarvutis"
+      ],
+      "badge": "",
+      "priceLabel": "alates 16,11 € / kuu"
+    }
+  ],
+  "legalText": [
+    {
+      "type": "paragraph",
+      "text": "30-päevane prooviperiood kehtib ainult uutele klientidele. Pärast prooviperioodi algab tasuline tellimus."
+    },
+    {
+      "type": "paragraph",
+      "text": "Tellimuse saab igal ajal lõpetada. Tarbijal on õigus 14 päeva jooksul lepingust taganeda."
+    }
+  ],
+  "faq": [
+    {
+      "question": "Kuidas ma tellimuse tühistan?",
+      "answer": "Tellimuse saad lõpetada oma konto seadetes igal ajal."
+    },
+    {
+      "question": "Milliseid makseviise toetatakse?",
+      "answer": "Maksta saab pangakaardiga maksepartneri turvalisel lehel."
+    }
+  ]
+}

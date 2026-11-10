@@ -1,0 +1,41 @@
+{
+  "id": "planpage-LV-en",
+  "market": "LV",
+  "locale": "en",
+  "updatedAt": "2026-09-18T08:15:00Z",
+  "headline": "Choose the plan that fits you",
+  "subhead": "Watch series and films on all your devices. Cancel any time.",
+  "planCards": [
+    {
+      "planKey": "basic",
+      "title": "Basic",
+      "bullets": [
+        "1 device at a time",
+        "Standard picture quality",
+        "Includes ads"
+      ],
+      "badge": "",
+      "priceLabel": "from 7,25 € / month"
+    },
+    {
+      "planKey": "standard",
+      "title": "Standard",
+      "bullets": [
+        "2 devices at a time",
+        "Full HD picture quality",
+        "No ads"
+      ],
+      "badge": "Most popular",
+      "priceLabel": "from 10,88 € / month"
+    },
+    {
+      "planKey": "premium",
+      "title": "Premium",
+      "bullets": [],
+      "badge": "",
+      "priceLabel": ""
+    }
+  ],
+  "legalText": [],
+  "faq": []
+}

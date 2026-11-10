@@ -1,0 +1,63 @@
+{
+  "id": "planpage-LT-lt",
+  "market": "LT",
+  "locale": "lt",
+  "updatedAt": "2026-10-12T09:30:00Z",
+  "headline": "Pasirinkite jums tinkamą planą",
+  "subhead": "Žiūrėkite serialus ir filmus visuose savo įrenginiuose. Atsisakykite bet kada.",
+  "planCards": [
+    {
+      "planKey": "basic",
+      "title": "Basic",
+      "bullets": [
+        "1 įrenginys vienu metu",
+        "Standartinė vaizdo kokybė",
+        "Rodoma reklama"
+      ],
+      "badge": "",
+      "priceLabel": "nuo 7,25 € / mėn."
+    },
+    {
+      "planKey": "standard",
+      "title": "Standard",
+      "bullets": [
+        "2 įrenginiai vienu metu",
+        "Full HD vaizdo kokybė",
+        "Be reklamos"
+      ],
+      "badge": "Populiariausias",
+      "priceLabel": "nuo 10,88 € / mėn."
+    },
+    {
+      "planKey": "premium",
+      "title": "Premium",
+      "bullets": [
+        "4 įrenginiai vienu metu",
+        "4K vaizdo kokybė",
+        "Atsisiuntimai telefone ir planšetėje"
+      ],
+      "badge": "",
+      "priceLabel": "nuo 14,99 € / mėn."
+    }
+  ],
+  "legalText": [
+    {
+      "type": "paragraph",
+      "text": "30 dienų bandomasis laikotarpis taikomas tik naujiems klientams. Pasibaigus bandomajam laikotarpiui prasideda mokama prenumerata."
+    },
+    {
+      "type": "paragraph",
+      "text": "Prenumeratą galima nutraukti bet kada. Vartotojas turi teisę per 14 dienų atsisakyti sutarties."
+    }
+  ],
+  "faq": [
+    {
+      "question": "Kaip atšaukti prenumeratą?",
+      "answer": "Prenumeratą galite nutraukti paskyros nustatymuose bet kuriuo metu."
+    },
+    {
+      "question": "Kokie mokėjimo būdai palaikomi?",
+      "answer": "Mokėti galima banko kortele saugiame mokėjimo partnerio puslapyje."
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "id": "planpage-LT-en",
+  "market": "LT",
+  "locale": "en",
+  "updatedAt": "2026-10-12T09:30:00Z",
+  "headline": "Choose the plan that fits you",
+  "subhead": "Watch series and films on all your devices. Cancel any time.",
+  "planCards": [
+    {
+      "planKey": "basic",
+      "title": "Basic",
+      "bullets": [
+        "1 device at a time",
+        "Standard picture quality",
+        "Includes ads"
+      ],
+      "badge": "",
+      "priceLabel": "from 7,25 € / month"
+    },
+    {
+      "planKey": "standard",
+      "title": "Standard",
+      "bullets": [
+        "2 devices at a time",
+        "Full HD picture quality",
+        "No ads"
+      ],
+      "badge": "Most popular",
+      "priceLabel": "from 10,88 € / month"
+    },
+    {
+      "planKey": "premium",
+      "title": "Premium",
+      "bullets": [
+        "4 devices at a time",
+        "4K picture quality",
+        "Downloads on phone and tablet"
+      ],
+      "badge": "",
+      "priceLabel": "from 14,99 € / month"
+    }
+  ],
+  "legalText": [
+    {
+      "type": "paragraph",
+      "text": "The 30-day free trial applies to new customers only. A paid subscription starts when the trial ends."
+    },
+    {
+      "type": "paragraph",
+      "text": "You can cancel at any time. Consumers have the right to withdraw from the contract within 14 days."
+    }
+  ],
+  "faq": [
+    {
+      "question": "How do I cancel?",
+      "answer": "You can cancel in your account settings at any time."
+    },
+    {
+      "question": "Which payment methods can I use?",
+      "answer": "You can pay by card on our payment partner's secure page."
+    }
+  ]
+}

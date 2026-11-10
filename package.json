@@ -1,0 +1,12 @@
+{
+  "name": "nordlight-assignment",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Starter repository for the Nordlight senior frontend assignment.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "mock": "node mock-server/server.js",
+    "mock:fast": "MOCK_TIME_SCALE=10 node mock-server/server.js",
+    "test:mock": "node --test mock-server/test/smoke.test.js"
+  }
+}

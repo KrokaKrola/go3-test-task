@@ -1,0 +1,37 @@
+{
+  "id": "planpage-LV-lv",
+  "market": "LV",
+  "locale": "lv",
+  "updatedAt": "2026-09-18T08:15:00Z",
+  "headline": "Izvēlieties sev piemērotāko plānu",
+  "subhead": "Skatieties seriālus un filmas visās savās ierīcēs.",
+  "planCards": [
+    {
+      "planKey": "basic",
+      "title": "Basic",
+      "bullets": [
+        "1 ierīce vienlaikus",
+        "Standarta kvalitāte",
+        "Ar reklāmām"
+      ],
+      "badge": "",
+      "priceLabel": "no 7,25 € / mēn."
+    },
+    {
+      "planKey": "standard",
+      "title": "Standard",
+      "bullets": [],
+      "badge": "",
+      "priceLabel": "no 10,88 € / mēn."
+    },
+    {
+      "planKey": "premium",
+      "title": "",
+      "bullets": [],
+      "badge": "",
+      "priceLabel": ""
+    }
+  ],
+  "legalText": [],
+  "faq": []
+}
