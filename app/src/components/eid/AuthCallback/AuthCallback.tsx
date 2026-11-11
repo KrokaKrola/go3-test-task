@@ -15,6 +15,7 @@ import { callbackContext } from '@/flow/callbackContext/callbackContext';
 import { exitUrl } from '@/flow/exitUrl/exitUrl';
 import type { FlowEffect } from '@/flow/machine/machine';
 import { navigateReplace } from '@/flow/navigate/navigate';
+import { issueRunGateToken } from '@/flow/runGateToken/runGateToken';
 import { createFlowStore } from '@/flow/store/store';
 import { getMessages } from '@/i18n/messages/messages';
 
@@ -97,7 +98,10 @@ function CallbackFlow({ apiBase, accountUrl, store, params, messages }: Props & 
     const unsubscribe = store.subscribe((next, previous) => {
       const target = exitUrl(next.state, params.utm, accountUrl, window.location.origin);
       if (target) {
-        if (next.state !== previous.state) navigateReplace(target);
+        if (next.state === previous.state) return;
+        const gatePlanKey = new URL(target).searchParams.get('plan');
+        if (next.state.name === 'Gate' && gatePlanKey) issueRunGateToken(sessionStore, gatePlanKey);
+        navigateReplace(target);
         return;
       }
       if (next.effects !== previous.effects) next.effects.forEach(run);

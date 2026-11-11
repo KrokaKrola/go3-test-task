@@ -814,6 +814,23 @@ describe('machine', () => {
     expect(reduce(from, { type: 'select', planId: 'plan_std_m' }).state.name).toBe('Gate');
   });
 
+  describe('openOrderSynced', () => {
+    test('Plans: stored order id enters ctx, so Try again runs Gate step 1', () => {
+      const synced = reduce(plans(ctx({ reviewStep: false })), {
+        type: 'openOrderSynced',
+        orderId: 'o9',
+      });
+      expect(synced.effects).toEqual([]);
+      const gated = reduce(synced.state, ev('tryAgain'));
+      expect(gated.state).toMatchObject({ name: 'Gate', step: 'order', orderId: 'o9' });
+    });
+
+    test('other states ignore it', () => {
+      const result = reduce(gateOrder(), { type: 'openOrderSynced', orderId: null });
+      expect(result.state.ctx.openOrderId).toBe('o1');
+    });
+  });
+
   describe('retry point = Plans', () => {
     const off = ctx({ reviewStep: false, planId: 'plan_std_m' });
     test.each<[string, FlowState, FlowEvent]>([

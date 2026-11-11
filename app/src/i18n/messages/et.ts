@@ -42,4 +42,17 @@ export const et: Messages = {
   'eid.otherBrowser.title': 'Jätka brauseris, kus alustasid',
   'eid.otherBrowser.body':
     'Tundub, et tulid tagasi teises brauseris. Jätka seal, kus alustasid, või alusta siin uuesti.',
+  'retry.notice.payment_cancelled': 'Makse tühistati',
+  'retry.notice.payment_declined': 'Makse lükati tagasi',
+  'retry.notice.plan_unavailable': 'See pakett ei ole enam saadaval. Palun vali mõni teine.',
+  'retry.error.network': 'Me ei saanud teenusega ühendust. Kontrolli ühendust ja proovi uuesti.',
+  'retry.error.other': 'Meie poolel läks midagi valesti. Proovi hetke pärast uuesti.',
+  'retry.selectedPlan': 'Valitud pakett:',
+  'retry.action.tryAgain': 'Proovi uuesti',
+  'retry.action.checkAgain': 'Kontrolli uuesti',
+  'retry.action.checkStatus': 'Kontrolli olekut',
+  'retry.resume.title': 'Sinu makse on pooleli',
+  'retry.resume.body':
+    'Sul on juba tellimus olemas. Kontrolli selle olekut, selle asemel et uus alustada.',
+  'retry.busy': 'Kontrollime…',
 };

@@ -43,4 +43,17 @@ export const lv: Messages = {
   'eid.otherBrowser.title': 'Turpiniet pārlūkprogrammā, kurā sākāt',
   'eid.otherBrowser.body':
     'Šķiet, ka atgriezāties citā pārlūkprogrammā. Turpiniet tur, kur sākāt, vai sāciet vēlreiz šeit.',
+  'retry.notice.payment_cancelled': 'Maksājums atcelts',
+  'retry.notice.payment_declined': 'Maksājums tika noraidīts',
+  'retry.notice.plan_unavailable': 'Šis plāns vairs nav pieejams. Lūdzu, izvēlieties citu.',
+  'retry.error.network':
+    'Mēs nevarējām sazināties ar pakalpojumu. Pārbaudiet savienojumu un mēģiniet vēlreiz.',
+  'retry.error.other': 'Mūsu pusē kaut kas nogāja greizi. Mēģiniet vēlreiz pēc brīža.',
+  'retry.selectedPlan': 'Izvēlētais plāns:',
+  'retry.action.tryAgain': 'Mēģināt vēlreiz',
+  'retry.action.checkAgain': 'Pārbaudīt vēlreiz',
+  'retry.action.checkStatus': 'Pārbaudīt statusu',
+  'retry.resume.title': 'Jūsu maksājums ir procesā',
+  'retry.resume.body': 'Jums jau ir pasūtījums. Pārbaudiet tā statusu, nevis sāciet jaunu.',
+  'retry.busy': 'Pārbaudām…',
 };

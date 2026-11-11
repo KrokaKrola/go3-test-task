@@ -12,12 +12,15 @@ export type PlansText = PlanCardText & { faqHeading: string };
 type Props = {
   page: PlanPageData;
   text: PlansText;
-  controller: Omit<PlansControllerProps, 'children'>;
+  controller: Omit<PlansControllerProps, 'children' | 'planTitles'>;
 };
+
+const planTitles = (page: PlanPageData) =>
+  Object.fromEntries(page.cards.map((card) => [card.planId, card.title]));
 
 export function PlansPage({ page, text, controller }: Props) {
   return (
-    <PlansController {...controller}>
+    <PlansController {...controller} planTitles={planTitles(page)}>
       <main className={styles.page}>
         <h1>{page.headline}</h1>
         {page.subhead && <p>{page.subhead}</p>}

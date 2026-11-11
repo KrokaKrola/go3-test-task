@@ -6,18 +6,26 @@ import type { PlanPageData } from '@/cms/parsePlanPage/parsePlanPage';
 import type { FlowContext } from '@/flow/machine/machine';
 import { createFlowStore } from '@/flow/store/store';
 import { pickEidMessages } from '@/components/eid/eidMessages/eidMessages';
+import { pickRetryMessages } from '@/components/RetryPoint/retryMessages/retryMessages';
+import { planIdFor } from '@/domain/plans/plans';
+import { openOrder } from '@/flow/openOrder/openOrder';
+import { sessionStore } from '@/flow/browserStorage/browserStorage';
+import { issueRunGateToken } from '@/flow/runGateToken/runGateToken';
 import { getMessages } from '@/i18n/messages/messages';
 
 const {
   fetchMe: getMe,
+  fetchOrder,
   track,
   navigate,
 } = vi.hoisted(() => ({
   fetchMe: vi.fn(),
+  fetchOrder: vi.fn(),
   track: vi.fn(),
   navigate: vi.fn(),
 }));
 vi.mock('@/api/me/me', () => ({ fetchMe: getMe }));
+vi.mock('@/api/order/order', () => ({ fetchOrder }));
 vi.mock('@/api/identity/identity', () => ({
   createIdentitySession: vi.fn(() => new Promise(() => {})),
 }));
@@ -40,6 +48,7 @@ const controller = (reviewStep: boolean, store?: PlansFlowStore) => ({
   accountUrl: 'https://account.test/',
   apiBase: 'http://api.test',
   eidMessages: pickEidMessages(getMessages('en')),
+  retryMessages: pickRetryMessages(getMessages('en')),
   store,
 });
 const price = '11,15 €';
@@ -96,6 +105,9 @@ const choose = (title: string) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
+  window.sessionStorage.clear();
+  window.history.replaceState(null, '', '/');
 });
 
 describe('PlansPage', () => {
@@ -226,5 +238,154 @@ describe('PlansPage', () => {
       screen.getByRole('button', { name: getMessages('en')['eid.action.changePlan'] }),
     );
     expect(document.title).toBe('Plans page');
+  });
+
+  describe('retry point on Plans (reviewStep off)', () => {
+    const en = getMessages('en');
+
+    it('reviewStep off: retry point shows the chosen plan preselected + banner; Try again → Gate', async () => {
+      window.history.replaceState(null, '', '/ee/en/?plan=standard&notice=payment_declined');
+      getMe.mockResolvedValue({ customerId: 'c', trialEligible: false, activeSubscription: null });
+      const store = createFlowStore({ ...ctx(false), planId: 'id_standard', identified: true });
+      render(<PlansPage page={page} text={text} controller={controller(false, store)} />);
+      await act(async () => {});
+      const banner = screen.getByRole('alert');
+      expect(banner).toHaveTextContent(en['retry.notice.payment_declined']);
+      expect(banner).toHaveFocus();
+      expect(screen.getByText('standard', { selector: 'strong' })).toBeInTheDocument();
+      expect(window.location.search).toBe('?plan=standard');
+
+      fireEvent.click(screen.getByRole('button', { name: en['retry.action.tryAgain'] }));
+      expect(store.getState().state.name).toBe('Gate');
+    });
+
+    it('Try again stays mounted, aria-disabled and focused while the Gate runs, with a status', async () => {
+      window.history.replaceState(null, '', '/ee/en/?notice=payment_declined');
+      getMe.mockResolvedValueOnce({
+        customerId: 'c',
+        trialEligible: false,
+        activeSubscription: null,
+      });
+      const store = createFlowStore({ ...ctx(false), planId: 'id_standard', identified: true });
+      render(<PlansPage page={page} text={text} controller={controller(false, store)} />);
+      await act(async () => {});
+      getMe.mockReturnValue(new Promise(() => {}));
+      const button = screen.getByRole('button', { name: en['retry.action.tryAgain'] });
+      button.focus();
+      fireEvent.click(button);
+      expect(store.getState().state.name).toBe('Gate');
+      const busyButton = screen.getByRole('button', { name: en['retry.busy'] });
+      expect(busyButton).toBe(button);
+      expect(busyButton).toHaveAttribute('aria-disabled', 'true');
+      expect(busyButton).toHaveFocus();
+      expect(screen.getByRole('status')).toHaveTextContent(en['retry.busy']);
+      expect(screen.getByRole('alert')).toHaveTextContent(en['retry.notice.payment_declined']);
+      fireEvent.click(busyButton);
+      expect(getMe).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      ['step 1 (open order, Pay disabled)', true],
+      ['step 3 (/v1/me)', false],
+    ])('Gate fails at %s → error banner gets focus', async (_label, atOrder) => {
+      window.history.replaceState(null, '', '/ee/en/?notice=payment_declined');
+      getMe.mockResolvedValueOnce({
+        customerId: 'c',
+        trialEligible: false,
+        activeSubscription: null,
+      });
+      const store = createFlowStore({ ...ctx(false), planId: 'id_standard', identified: true });
+      render(<PlansPage page={page} text={text} controller={controller(false, store)} />);
+      await act(async () => {});
+      const banner = screen.getByRole('alert');
+      expect(banner).toHaveTextContent(en['retry.notice.payment_declined']);
+      if (atOrder) {
+        openOrder.save({
+          orderId: 'o1',
+          paymentUrl: 'http://pay.test/o1',
+          planId: 'id_standard',
+          market: 'ee',
+          locale: 'en',
+          snapshot: { value: 1, tax: 0, currency: 'EUR', trial: 'false' },
+        });
+        fetchOrder.mockRejectedValue(apiError('server', 500));
+      } else getMe.mockRejectedValue(apiError('server', 500));
+      const button = screen.getByRole('button', { name: en['retry.action.tryAgain'] });
+      button.focus();
+      fireEvent.click(button);
+      await act(async () => {});
+      expect(store.getState().state.name).toBe('Plans');
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent(en['retry.error.other']);
+      expect(alert).toHaveFocus();
+    });
+
+    it('chosen plan comes from the URL when nothing is stored', async () => {
+      window.history.replaceState(
+        null,
+        '',
+        '/ee/en/?market=ee&locale=en&plan=premium&notice=payment_cancelled',
+      );
+      getMe.mockResolvedValue({ customerId: 'c', trialEligible: false, activeSubscription: null });
+      const realIdPage = {
+        ...page,
+        cards: page.cards.map((card) => ({ ...card, planId: planIdFor(card.planKey)! })),
+      };
+      render(<PlansPage page={realIdPage} text={text} controller={controller(false)} />);
+      await act(async () => {});
+      expect(screen.getByText('premium', { selector: 'strong' })).toBeInTheDocument();
+    });
+
+    it('Try again checks the open order another tab wrote: pending → Resume, Check status only', async () => {
+      window.history.replaceState(null, '', '/ee/en/?notice=payment_declined');
+      getMe.mockResolvedValue({ customerId: 'c', trialEligible: false, activeSubscription: null });
+      fetchOrder.mockResolvedValue({ status: 'pending' });
+      const store = createFlowStore({ ...ctx(false), planId: 'id_standard', identified: true });
+      render(<PlansPage page={page} text={text} controller={controller(false, store)} />);
+      await act(async () => {});
+      openOrder.save({
+        orderId: 'o1',
+        paymentUrl: 'http://pay.test/o1',
+        planId: 'id_standard',
+        market: 'ee',
+        locale: 'en',
+        snapshot: { value: 1, tax: 0, currency: 'EUR', trial: 'false' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: en['retry.action.tryAgain'] }));
+      await act(async () => {});
+      expect(fetchOrder).toHaveBeenCalledWith('http://api.test', 'o1', expect.any(AbortSignal));
+      expect(store.getState().state.name).toBe('Resume');
+      expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual([
+        en['retry.action.checkStatus'],
+      ]);
+    });
+
+    it('reviewStep on: no Try again on Plans', async () => {
+      window.history.replaceState(null, '', '/ee/en/?notice=plan_unavailable');
+      await setup('identified', true);
+      expect(screen.getByRole('alert')).toHaveTextContent(en['retry.notice.plan_unavailable']);
+      expect(screen.queryByRole('button', { name: en['retry.action.tryAgain'] })).toBeNull();
+    });
+
+    it('rungate=1 (Q68): runs the Gate once for the URL plan, then strips the marker', async () => {
+      issueRunGateToken(sessionStore, 'standard');
+      window.history.replaceState(null, '', '/ee/en/?plan=standard&rungate=1');
+      const store = await setup('identified', false);
+      expect(store.getState().state.name).toBe('CreatingOrder');
+      expect(track).not.toHaveBeenCalledWith('plan_selected', expect.anything());
+      expect(window.location.search).toBe('?plan=standard');
+    });
+
+    it.each([
+      ['no token (crafted link)', null],
+      ['token for another plan', 'basic'],
+    ])('rungate=1 with %s → Plans, no Gate, marker stripped (inv. 1)', async (_, tokenPlan) => {
+      if (tokenPlan) issueRunGateToken(sessionStore, tokenPlan);
+      window.history.replaceState(null, '', '/ee/en/?plan=premium&rungate=1');
+      const store = await setup('identified', false);
+      expect(store.getState().state.name).toBe('Plans');
+      expect(getMe).toHaveBeenCalledTimes(1); // Entry only, no Gate step 3
+      expect(window.location.search).toBe('?plan=premium');
+    });
   });
 });

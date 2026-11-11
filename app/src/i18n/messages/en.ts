@@ -39,4 +39,17 @@ export const en = {
   'eid.otherBrowser.title': 'Continue in the browser where you started',
   'eid.otherBrowser.body':
     'You seem to have returned in a different browser. Continue where you started, or start again here.',
+  'retry.notice.payment_cancelled': 'Payment cancelled',
+  'retry.notice.payment_declined': 'Payment was declined',
+  'retry.notice.plan_unavailable': 'This plan is no longer available. Please choose another one.',
+  'retry.error.network': "We couldn't reach our service. Check your connection and try again.",
+  'retry.error.other': 'Something went wrong on our side. Try again in a moment.',
+  'retry.selectedPlan': 'Selected plan:',
+  'retry.action.tryAgain': 'Try again',
+  'retry.action.checkAgain': 'Check again',
+  'retry.action.checkStatus': 'Check status',
+  'retry.resume.title': 'Your payment is in progress',
+  'retry.resume.body':
+    'We already have an order for you. Check its status instead of starting a new one.',
+  'retry.busy': 'Checking…',
 };

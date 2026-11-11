@@ -58,6 +58,8 @@ export type StateName = FlowState['name'];
 
 export type FlowEvent =
   | { type: 'begin' } // state shown (load, reload, bfcache restore): run on-enter again (inv. 6)
+  // Storage read just before an action that can start the Gate: another tab may have written it.
+  | { type: 'openOrderSynced'; orderId: string | null }
   | { type: 'meLoaded'; me: Pick<MeResponse, 'activeSubscription'> }
   | { type: 'meFailed'; error: ApiError }
   | { type: 'select'; planId: string }
@@ -248,6 +250,10 @@ function onPolledOrder(
 export function reduce(state: FlowState, event: FlowEvent): Transition {
   const { ctx } = state;
   if (event.type === 'begin') return onBegin(state);
+  if (event.type === 'openOrderSynced')
+    return state.name === 'Plans' || state.name === 'Review'
+      ? stay({ ...state, ctx: { ...ctx, openOrderId: event.orderId } })
+      : stay(state);
 
   switch (state.name) {
     case 'Entry':

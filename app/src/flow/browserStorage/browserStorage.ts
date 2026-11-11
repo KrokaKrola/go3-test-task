@@ -1,5 +1,5 @@
 // Lazy and throw-safe: reading `sessionStorage` can itself throw (blocked site data).
-export const sessionStore: Pick<Storage, 'getItem' | 'setItem'> = {
+export const sessionStore: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = {
   getItem: (key) => {
     try {
       return window.sessionStorage.getItem(key);
@@ -12,6 +12,13 @@ export const sessionStore: Pick<Storage, 'getItem' | 'setItem'> = {
       window.sessionStorage.setItem(key, value);
     } catch {
       // convenience copy only (Q7)
+    }
+  },
+  removeItem: (key) => {
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // nothing stored, nothing to remove
     }
   },
 };

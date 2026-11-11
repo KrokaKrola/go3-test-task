@@ -22,6 +22,7 @@ vi.mock('@/analytics/analytics/analytics', () => ({
 import { apiError, eidMessages } from '@/components/eid/eidTestKit/eidTestKit';
 import { saveStoredParams } from '@/flow/context/context';
 import { sessionStore } from '@/flow/browserStorage/browserStorage';
+import { consumeRunGateToken } from '@/flow/runGateToken/runGateToken';
 import { getMessages } from '@/i18n/messages/messages';
 import { AuthCallback } from './AuthCallback';
 
@@ -112,6 +113,14 @@ describe('AuthCallback', () => {
     await mount(false);
     expect(lastExit().pathname).toBe('/ee/et/');
     expect(lastExit().searchParams.get('plan')).toBe('standard');
+    expect(consumeRunGateToken(sessionStore, 'standard')).toBe(true);
+  });
+
+  it('reviewStep on: Review exit issues no rungate token', async () => {
+    fetchMe.mockResolvedValue(ME);
+    visit(OK_QUERY);
+    await mount(true);
+    expect(consumeRunGateToken(sessionStore, 'standard')).toBe(false);
   });
 
   it('ok + activeSubscription → ACCOUNT_URL', async () => {

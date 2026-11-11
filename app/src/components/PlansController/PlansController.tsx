@@ -2,16 +2,27 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { fetchMe } from '@/api/me/me';
-import type { ApiError } from '@/api/errors/errors';
+import { fetchOrder } from '@/api/order/order';
 import { setCommonSource, track } from '@/analytics/analytics/analytics';
 import { PlansContext } from '@/components/PlansController/plansContext';
+import { LiveRegion } from '@/components/LiveRegion/LiveRegion';
 import { EidScreen, isEidState } from '@/components/eid/EidScreen/EidScreen';
 import type { EidMessages } from '@/components/eid/eidMessages/eidMessages';
 import { useEidRestore } from '@/components/eid/useEidRestore/useEidRestore';
 import { useFocusHeadingOnStepChange } from '@/components/focus/focus';
+import { Resume, RetryPoint } from '@/components/RetryPoint/RetryPoint';
+import type { RetryMessages } from '@/components/RetryPoint/retryMessages/retryMessages';
 import type { Pair } from '@/domain/markets/markets';
-import type { FlowEffect } from '@/flow/machine/machine';
+import { planIdFor } from '@/domain/plans/plans';
+import { sessionStore } from '@/flow/browserStorage/browserStorage';
+import { resolveFlowParams } from '@/flow/context/context';
+import { RUN_GATE_PARAM } from '@/flow/exitUrl/exitUrl';
+import { runGateEffect, type GateDeps } from '@/flow/gate/gate';
+import type { FlowEffect, FlowEvent, RetryView } from '@/flow/machine/machine';
 import { navigate } from '@/flow/navigate/navigate';
+import { removeUrlParam } from '@/flow/notice/notice';
+import { consumeRunGateToken } from '@/flow/runGateToken/runGateToken';
+import { openOrder } from '@/flow/openOrder/openOrder';
 import { createFlowStore } from '@/flow/store/store';
 import { readUtm } from '@/flow/utm/utm';
 
@@ -23,9 +34,19 @@ export type PlansControllerProps = {
   accountUrl: string;
   apiBase: string;
   eidMessages: EidMessages;
+  retryMessages: RetryMessages;
+  // API plan id → card title, for the retry point's "selected plan".
+  planTitles: Record<string, string>;
   store?: PlansFlowStore;
   children: ReactNode;
 };
+
+// Stored context beats the URL (inv. 2); the URL covers a return in another browser (Q7).
+function chosenPlanId(): string | null {
+  if (typeof window === 'undefined') return null;
+  const plan = resolveFlowParams(sessionStore, window.location.search)?.plan;
+  return plan ? (planIdFor(plan) ?? null) : null;
+}
 
 export function PlansController({
   pair,
@@ -33,6 +54,8 @@ export function PlansController({
   accountUrl,
   apiBase,
   eidMessages,
+  retryMessages,
+  planTitles,
   store: injectedStore,
   children,
 }: PlansControllerProps) {
@@ -42,7 +65,7 @@ export function PlansController({
       createFlowStore({
         market: pair.market,
         locale: pair.locale,
-        planId: null,
+        planId: chosenPlanId(),
         reviewStep,
         identified: false,
         openOrderId: null,
@@ -50,19 +73,30 @@ export function PlansController({
         conflictRetried: false,
       }),
   );
+  // Gate-triggering actions look at storage first: another tab may have created an order (Q37).
+  const syncOpenOrder = (dispatch: (event: FlowEvent) => void) =>
+    dispatch({ type: 'openOrderSynced', orderId: openOrder.read()?.orderId ?? null });
   const state = store((s) => s.state);
   const eidActive = isEidState(state);
+  const resumeActive = state.name === 'Resume';
   useEidRestore(store, 'plans');
-  // Plans -> eID screens is a step change; Entry -> Plans is not.
-  useFocusHeadingOnStepChange(eidActive ? state.name : 'plans');
+  // Plans -> eID or Resume screens is a step change; Entry -> Plans is not.
+  useFocusHeadingOnStepChange(eidActive || resumeActive ? state.name : 'plans');
   const [trialEligible, setTrialEligible] = useState<boolean | null>(null);
   // A click while Entry is still checking /v1/me waits for Plans (Q65).
   const heldPlanId = useRef<string | null>(null);
+  // `rungate=1` (Q68): run the Gate on reaching Plans. Not a user select, so no plan_selected (07).
+  const gateIntentPlanId = useRef<string | null>(null);
+  // The Gate replaces Plans for a moment; the retry point keeps its banner meanwhile.
+  const [lastPlansView, setLastPlansView] = useState<RetryView>({});
+  if (state.name === 'Plans' && state.view !== lastPlansView) setLastPlansView(state.view);
 
-  const selectNow = (planId: string) => {
+  const selectNow = (planId: string, tracked = true) => {
     if (store.getState().state.name !== 'Plans') return;
-    track('plan_selected', { plan_id: planId });
-    store.getState().dispatch({ type: 'select', planId });
+    if (tracked) track('plan_selected', { plan_id: planId });
+    const { dispatch } = store.getState();
+    syncOpenOrder(dispatch);
+    dispatch({ type: 'select', planId });
   };
 
   useEffect(() => {
@@ -75,19 +109,18 @@ export function PlansController({
     const abort = new AbortController();
     const { dispatch } = store.getState();
 
+    const gateDeps: GateDeps = {
+      getMe: async (signal) => {
+        const me = await fetchMe(apiBase, signal);
+        if (!signal.aborted) setTrialEligible(me.trialEligible);
+        return me;
+      },
+      getOrder: (orderId, signal) => fetchOrder(apiBase, orderId, signal),
+      clearOpenOrder: () => openOrder.clear(),
+    };
     const run = (effect: FlowEffect) => {
       if (effect.type === 'redirectToAccount') navigate(accountUrl);
-      if (effect.type !== 'fetchMe') return;
-      fetchMe(apiBase, abort.signal).then(
-        (me) => {
-          if (abort.signal.aborted) return;
-          setTrialEligible(me.trialEligible);
-          dispatch({ type: 'meLoaded', me });
-        },
-        (error: ApiError) => {
-          if (!abort.signal.aborted) dispatch({ type: 'meFailed', error });
-        },
-      );
+      runGateEffect(effect, dispatch, abort.signal, gateDeps);
     };
 
     const unsubscribe = store.subscribe((next, previous) => {
@@ -96,10 +129,23 @@ export function PlansController({
         const held = heldPlanId.current;
         heldPlanId.current = null;
         if (held) selectNow(held);
+        const gateIntent = gateIntentPlanId.current;
+        gateIntentPlanId.current = null;
+        if (gateIntent) selectNow(gateIntent, false);
       }
       if (next.effects !== previous.effects) next.effects.forEach(run);
     });
     dispatch({ type: 'begin' });
+    // One-time marker from the callback (Q68): run the Gate for the URL plan only when this tab's
+    // callback issued a token for it, so a crafted link can't create an order (inv. 1).
+    const query = new URLSearchParams(window.location.search);
+    const planKey = query.get('plan');
+    const tokenValid = consumeRunGateToken(sessionStore, planKey);
+    if (query.get(RUN_GATE_PARAM) === '1') {
+      const planId = planIdFor(planKey ?? '');
+      if (!reviewStep && tokenValid && planId) gateIntentPlanId.current = planId;
+      removeUrlParam(RUN_GATE_PARAM);
+    }
     return () => {
       abort.abort();
       unsubscribe();
@@ -114,21 +160,45 @@ export function PlansController({
   };
 
   const trialHidden = state.ctx.identified && trialEligible === false;
+  const { dispatch: send } = store.getState();
 
-  return (
-    <PlansContext.Provider value={{ trialHidden, select }}>
-      {eidActive ? (
+  const screen = () => {
+    if (eidActive)
+      return (
         <EidScreen
           state={state}
-          dispatch={store.getState().dispatch}
+          dispatch={send}
           messages={eidMessages}
           utm={readUtm(new URLSearchParams(window.location.search))}
           apiBase={apiBase}
           redirect={navigate}
         />
-      ) : (
-        children
-      )}
-    </PlansContext.Provider>
-  );
+      );
+    if (state.name === 'Resume')
+      return (
+        <Resume messages={retryMessages} onCheckStatus={() => send({ type: 'checkStatus' })} />
+      );
+    return (
+      <>
+        {(state.name === 'Plans' || state.name === 'Gate') && (
+          <RetryPoint
+            messages={retryMessages}
+            view={state.name === 'Plans' ? state.view : lastPlansView}
+            planTitle={state.ctx.planId ? (planTitles[state.ctx.planId] ?? null) : null}
+            canRetry={!reviewStep && Boolean(state.ctx.planId)}
+            busy={state.name === 'Gate'}
+            onTryAgain={() => {
+              syncOpenOrder(send);
+              send({ type: 'tryAgain' });
+            }}
+            onCheckAgain={() => send({ type: 'retryCheck' })}
+          />
+        )}
+        <LiveRegion text={state.name === 'Gate' ? retryMessages['retry.busy'] : ''} />
+        {children}
+      </>
+    );
+  };
+
+  return <PlansContext.Provider value={{ trialHidden, select }}>{screen()}</PlansContext.Provider>;
 }

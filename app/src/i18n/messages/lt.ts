@@ -43,4 +43,17 @@ export const lt: Messages = {
   'eid.otherBrowser.title': 'Tęskite naršyklėje, kurioje pradėjote',
   'eid.otherBrowser.body':
     'Atrodo, kad grįžote kita naršykle. Tęskite ten, kur pradėjote, arba pradėkite iš naujo čia.',
+  'retry.notice.payment_cancelled': 'Mokėjimas atšauktas',
+  'retry.notice.payment_declined': 'Mokėjimas buvo atmestas',
+  'retry.notice.plan_unavailable': 'Šis planas nebepasiekiamas. Pasirinkite kitą.',
+  'retry.error.network':
+    'Nepavyko susisiekti su paslauga. Patikrinkite ryšį ir bandykite dar kartą.',
+  'retry.error.other': 'Mūsų pusėje kažkas nepavyko. Bandykite dar kartą po akimirkos.',
+  'retry.selectedPlan': 'Pasirinktas planas:',
+  'retry.action.tryAgain': 'Bandyti dar kartą',
+  'retry.action.checkAgain': 'Patikrinti dar kartą',
+  'retry.action.checkStatus': 'Patikrinti būseną',
+  'retry.resume.title': 'Jūsų mokėjimas vyksta',
+  'retry.resume.body': 'Jau turite užsakymą. Patikrinkite jo būseną, užuot pradėję naują.',
+  'retry.busy': 'Tikriname…',
 };
