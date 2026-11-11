@@ -4233,3 +4233,23 @@ for testing purpose copy lt cms response, check if everything will work for that
 ## 2026-11-11T18:32:04.836Z · session `cb441790`
 
 also update README.me and time spent and put it under extra, so i can pin point this issues during presentation and why i think they are extra. since we already passed 5 hours time limit
+
+## 2026-11-11T18:47:12.334Z · session `eca2019e`
+
+could you check time counting one more time? like how much time I spent? because i hitted model limit at some point, and models were not working all the time
+
+## 2026-11-11T18:48:40.950Z · session `eca2019e`
+
+yeah, update them pls
+
+## 2026-11-11T18:49:39.003Z · session `eca2019e`
+
+i did a re-write ba accident, could you try to update it one more time
+
+## 2026-11-11T18:50:50.625Z · session `eca2019e`
+
+it's kinda hard to read for a human :)
+
+## 2026-11-11T18:52:59.463Z · session `eca2019e`
+
+still not easy to read, make it via a table, but with some spacing

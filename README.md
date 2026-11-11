@@ -66,24 +66,43 @@ Built in the slice: every state in `spec/04`, both `reviewStep` arms, open order
 
 ## Time spent
 
-From the timestamps in `ai-log/` (prompts + session transcripts, local time EET). Wall = time inside a sitting. Active = wall minus pauses over 10 min.
+Counted from the timestamps in `ai-log/`.
 
-| Phase | Budget | Wall | Active |
-| --- | --- | --- | --- |
-| 0. Discovery: inconsistencies, 3 questions, 01 scope, 03 | 0:30 | 0:49 | 0:34 |
-| 1. Spec (`spec/` 02, 04–11, whole-spec review) | 2:30 | 1:58 | 1:48 |
-| 2. Slice (`app/`, W-01 – W-13) | 1:30 | 4:10 | 3:26 |
-| 3. AI-LOG, TEAM-NOTE, README | 0:30 | ~0:30 | not measurable, mostly hand-written |
-| **Total** | **5:00** | **~7:25** | **~5:50 + docs** |
-| Extra, after the stop (see below) | — | 0:35 | ~0:20 |
+- **Active**: time I was actually working. Breaks over 10 minutes are left out.
+- **Wall**: time from the start to the end of each sitting.
 
-Sittings: 10 Nov 22:22–01:05 (discovery + spec), 11 Nov 07:50–10:25 (W-01 – W-09), 11 Nov 12:50–15:00 (W-09 – W-13, docs), 11 Nov 20:00–20:35 (extra).
+### By phase
 
-- I went over the 5-hour stop by about 2:25. All of it came from the slice (4:10 against 1:30), because every work item ran through a worker → reviewer → fix loop (see `AI-LOG.md`). The spec came in under budget.
-- My own reading of `docs/` before the logging hooks existed isn't in the logs, so discovery is likely longer than shown
-- Per-item times are in [`app/README.md`](app/README.md) and [`spec/README.md`](spec/README.md)
+| Phase | Budget | Active | Wall |
+| --- | :---: | :---: | :---: |
+| 0. Discovery | 0:30 | 0:37 | 0:49 |
+| 1. Spec | 2:30 | 1:46 | 1:58 |
+| 2. Slice (`app/`) | 1:30 | **3:44** | 4:10 |
+| 3. Docs | 0:30 | ~0:30 | ~0:30 |
+| **Total** | **5:00** | **~6:40** | **~7:25** |
+| Extra, after the stop | — | 0:32 | 0:35 |
 
-## Extra (after the 5-hour stop)
+### By sitting (EET)
+
+| Day | Time | What |
+| --- | --- | --- |
+| 10 Nov | 22:22–01:05 | Discovery, spec |
+| 11 Nov | 07:50–10:25 | W-01 to W-09 |
+| 11 Nov | 10:25–12:50 | ⏸ **Claude usage limit.** No work, not counted |
+| 11 Nov | 12:50–15:00 | W-09 to W-13, docs |
+| 11 Nov | 20:00–20:35 | Extra fixes |
+
+### Notes
+
+| | |
+| --- | --- |
+| Over budget | About 1:40 over, all from the slice (3:44 against 1:30). Every work item went through a worker → reviewer → fix loop (`AI-LOG.md`) |
+| Spec | Under budget |
+| Discovery | Probably a bit longer than shown: I read `docs/` before the logging hooks existed |
+| Docs | Mostly written by hand, so the logs barely show it. ~0:30 is an estimate |
+| Per item | [`app/README.md`](app/README.md), [`spec/README.md`](spec/README.md) |
+
+## Extra (after the main hours time stop)
 
 Manual testing after the stop found the issues below. I fixed them on extra time and kept them out of the main budget, so the table above shows what the main working hours produced. Details in `AI-LOG.md` #5, Q76 and Q77 in `spec/03`.
 
