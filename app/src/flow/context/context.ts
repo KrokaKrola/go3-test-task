@@ -33,11 +33,14 @@ const toSearchParams = (params: FlowParams, withUtm: boolean): URLSearchParams =
   return search;
 };
 
-export function buildReturnUrl(origin: string, path: ReturnPath, params: FlowParams): string {
+export function buildFlowUrl(origin: string, path: string, params: FlowParams): string {
   const url = new URL(path, origin);
   url.search = toSearchParams(params, true).toString();
   return url.toString();
 }
+
+export const buildReturnUrl = (origin: string, path: ReturnPath, params: FlowParams): string =>
+  buildFlowUrl(origin, path, params);
 
 // Callbacks may land on a disabled market (Q52), so all pairs are valid here.
 // Only an exact (lowercase, existing) pair is accepted: we built these URLs ourselves.

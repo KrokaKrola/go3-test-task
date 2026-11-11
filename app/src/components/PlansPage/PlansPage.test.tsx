@@ -5,6 +5,8 @@ import type { ApiError } from '@/api/errors/errors';
 import type { PlanPageData } from '@/cms/parsePlanPage/parsePlanPage';
 import type { FlowContext } from '@/flow/machine/machine';
 import { createFlowStore } from '@/flow/store/store';
+import { pickEidMessages } from '@/components/eid/eidMessages/eidMessages';
+import { getMessages } from '@/i18n/messages/messages';
 
 const {
   fetchMe: getMe,
@@ -16,6 +18,9 @@ const {
   navigate: vi.fn(),
 }));
 vi.mock('@/api/me/me', () => ({ fetchMe: getMe }));
+vi.mock('@/api/identity/identity', () => ({
+  createIdentitySession: vi.fn(() => new Promise(() => {})),
+}));
 vi.mock('@/analytics/analytics/analytics', () => ({ track, setCommonSource: vi.fn() }));
 vi.mock('@/flow/navigate/navigate', () => ({ navigate }));
 
@@ -34,6 +39,7 @@ const controller = (reviewStep: boolean, store?: PlansFlowStore) => ({
   reviewStep,
   accountUrl: 'https://account.test/',
   apiBase: 'http://api.test',
+  eidMessages: pickEidMessages(getMessages('en')),
   store,
 });
 const price = '11,15 €';
@@ -158,8 +164,10 @@ describe('PlansPage', () => {
     const store = await setup('anon');
     choose('basic');
     expect(store.getState().state.name).toBe('StartingEid');
-    store.getState().dispatch({ type: 'sessionFailed', error: apiError('server', 500) });
-    store.getState().dispatch({ type: 'changePlan' });
+    act(() => {
+      store.getState().dispatch({ type: 'sessionFailed', error: apiError('server', 500) });
+      store.getState().dispatch({ type: 'changePlan' });
+    });
     expect(store.getState().state.name).toBe('Plans');
     choose('premium');
     expect(track.mock.calls.filter(([name]) => name === 'plan_selected')).toEqual([
@@ -170,9 +178,12 @@ describe('PlansPage', () => {
 
   it('clicks the machine ignores are not tracked', async () => {
     const store = await setup('anon');
-    choose('basic');
-    choose('basic');
-    choose('standard');
+    // One act batch: the DOM still shows the cards, as with a fast double tap.
+    act(() => {
+      choose('basic');
+      choose('basic');
+      choose('standard');
+    });
     expect(store.getState().state.ctx.planId).toBe('id_basic');
     expect(track.mock.calls.filter(([name]) => name === 'plan_selected')).toHaveLength(1);
   });
@@ -192,5 +203,28 @@ describe('PlansPage', () => {
     );
     expect(store.getState().state.name).toBe('Review');
     expect(track.mock.calls.map(([name]) => name)).toEqual(['plan_viewed', 'plan_selected']);
+  });
+
+  it('bfcache restore while StartingEid → Plans, cards back (Q69)', async () => {
+    const store = await setup('anon');
+    choose('basic');
+    expect(screen.queryByRole('button', { name: 'Choose standard' })).toBeNull();
+    act(() => {
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    });
+    expect(store.getState().state.name).toBe('Plans');
+    expect(screen.getByRole('button', { name: 'Choose standard' })).toBeInTheDocument();
+  });
+
+  it('document.title returns to the page title after StartError → Change plan', async () => {
+    document.title = 'Plans page';
+    const store = await setup('anon');
+    choose('basic');
+    act(() => store.getState().dispatch({ type: 'sessionFailed', error: apiError('server', 500) }));
+    expect(document.title).not.toBe('Plans page');
+    fireEvent.click(
+      screen.getByRole('button', { name: getMessages('en')['eid.action.changePlan'] }),
+    );
+    expect(document.title).toBe('Plans page');
   });
 });

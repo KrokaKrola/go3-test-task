@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { loadPlanPage } from '@/cms/loadPlanPage/loadPlanPage';
+import { pickEidMessages } from '@/components/eid/eidMessages/eidMessages';
 import { PlansPage } from '@/components/PlansPage/PlansPage';
 import { getConfig } from '@/config';
 import { ALL_PAIRS, enabledPairs } from '@/domain/markets/markets';
@@ -36,6 +37,7 @@ export default async function PairPage({ params }: { params: Params }) {
         reviewStep: config.flags.reviewStep,
         accountUrl: config.ACCOUNT_URL,
         apiBase: config.API_BASE,
+        eidMessages: pickEidMessages(messages),
       }}
       text={{
         choose: messages['plans.choose'],

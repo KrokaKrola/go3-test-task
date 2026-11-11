@@ -5,6 +5,10 @@ import { fetchMe } from '@/api/me/me';
 import type { ApiError } from '@/api/errors/errors';
 import { setCommonSource, track } from '@/analytics/analytics/analytics';
 import { PlansContext } from '@/components/PlansController/plansContext';
+import { EidScreen, isEidState } from '@/components/eid/EidScreen/EidScreen';
+import type { EidMessages } from '@/components/eid/eidMessages/eidMessages';
+import { useEidRestore } from '@/components/eid/useEidRestore/useEidRestore';
+import { useFocusHeadingOnStepChange } from '@/components/focus/focus';
 import type { Pair } from '@/domain/markets/markets';
 import type { FlowEffect } from '@/flow/machine/machine';
 import { navigate } from '@/flow/navigate/navigate';
@@ -18,6 +22,7 @@ export type PlansControllerProps = {
   reviewStep: boolean;
   accountUrl: string;
   apiBase: string;
+  eidMessages: EidMessages;
   store?: PlansFlowStore;
   children: ReactNode;
 };
@@ -27,6 +32,7 @@ export function PlansController({
   reviewStep,
   accountUrl,
   apiBase,
+  eidMessages,
   store: injectedStore,
   children,
 }: PlansControllerProps) {
@@ -45,6 +51,10 @@ export function PlansController({
       }),
   );
   const state = store((s) => s.state);
+  const eidActive = isEidState(state);
+  useEidRestore(store, 'plans');
+  // Plans -> eID screens is a step change; Entry -> Plans is not.
+  useFocusHeadingOnStepChange(eidActive ? state.name : 'plans');
   const [trialEligible, setTrialEligible] = useState<boolean | null>(null);
   // A click while Entry is still checking /v1/me waits for Plans (Q65).
   const heldPlanId = useRef<string | null>(null);
@@ -105,5 +115,20 @@ export function PlansController({
 
   const trialHidden = state.ctx.identified && trialEligible === false;
 
-  return <PlansContext.Provider value={{ trialHidden, select }}>{children}</PlansContext.Provider>;
+  return (
+    <PlansContext.Provider value={{ trialHidden, select }}>
+      {eidActive ? (
+        <EidScreen
+          state={state}
+          dispatch={store.getState().dispatch}
+          messages={eidMessages}
+          utm={readUtm(new URLSearchParams(window.location.search))}
+          apiBase={apiBase}
+          redirect={navigate}
+        />
+      ) : (
+        children
+      )}
+    </PlansContext.Provider>
+  );
 }

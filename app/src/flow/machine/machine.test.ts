@@ -79,13 +79,7 @@ const rows: Row[] = [
   ['Entry 5xx', s('Entry'), { type: 'meFailed', ...failed('server') }, 'Plans', []],
   ['Entry network', s('Entry'), { type: 'meFailed', ...failed('network') }, 'Plans', []],
   // Plans
-  [
-    'Plans select anonymous',
-    plans(),
-    { type: 'select', planId: 'plan_std_m' },
-    'StartingEid',
-    ['startEidSession'],
-  ],
+  ['Plans select anonymous', plans(), { type: 'select', planId: 'plan_std_m' }, 'StartingEid', []],
   [
     'Plans select identified',
     plans(ctx({ identified: true })),
@@ -95,18 +89,11 @@ const rows: Row[] = [
   ],
   // StartingEid
   [
-    'StartingEid 201',
-    s('StartingEid'),
-    { type: 'sessionCreated', redirectUrl: 'http://x' },
-    'StartingEid',
-    ['redirect'],
-  ],
-  [
     'StartingEid 429',
     s('StartingEid'),
     { type: 'sessionFailed', error: err('rateLimited', { retryAfterSec: 30 }) },
     'RateLimited',
-    ['startCountdown'],
+    [],
   ],
   [
     'StartingEid 400',
@@ -142,7 +129,7 @@ const rows: Row[] = [
     s('RateLimited', { retryAfterSec: 30, ready: true }),
     ev('tryAgain'),
     'StartingEid',
-    ['startEidSession'],
+    [],
   ],
   [
     'RateLimited try again (not ready)',
@@ -159,7 +146,7 @@ const rows: Row[] = [
     [],
   ],
   // StartError
-  ['StartError try again', s('StartError'), ev('tryAgain'), 'StartingEid', ['startEidSession']],
+  ['StartError try again', s('StartError'), ev('tryAgain'), 'StartingEid', []],
   ['StartError change plan', s('StartError'), ev('changePlan'), 'Plans', []],
   // EidCallback
   [
@@ -203,7 +190,7 @@ const rows: Row[] = [
     s('EidFailed', { reason: 'cancelled' }),
     ev('tryAgain'),
     'StartingEid',
-    ['startEidSession'],
+    [],
   ],
   ['EidFailed change plan', s('EidFailed', { reason: 'expired' }), ev('changePlan'), 'Plans', []],
   // Verifying
@@ -233,21 +220,9 @@ const rows: Row[] = [
   ['Verifying 200', s('Verifying'), meOk(), 'Review', ['fetchPlans']],
   // VerifyError
   ['VerifyError try again', s('VerifyError'), ev('tryAgain'), 'Verifying', ['fetchMe']],
-  [
-    'VerifyError start again',
-    s('VerifyError'),
-    ev('startAgain'),
-    'StartingEid',
-    ['startEidSession'],
-  ],
+  ['VerifyError start again', s('VerifyError'), ev('startAgain'), 'StartingEid', []],
   // OtherBrowser
-  [
-    'OtherBrowser start again here',
-    s('OtherBrowser'),
-    ev('startAgain'),
-    'StartingEid',
-    ['startEidSession'],
-  ],
+  ['OtherBrowser start again here', s('OtherBrowser'), ev('startAgain'), 'StartingEid', []],
   // Review
   ['Review plan missing', review(), { type: 'plansChecked', planFound: false }, 'Plans', []],
   ['Review plan found', review(), { type: 'plansChecked', planFound: true }, 'Review', []],
@@ -288,7 +263,7 @@ const rows: Row[] = [
     s('CreatingOrder'),
     { type: 'orderCreateFailed', ...failed('unauthenticated') },
     'StartingEid',
-    ['startEidSession'],
+    [],
   ],
   [
     'CreatingOrder already_subscribed',
@@ -453,13 +428,7 @@ const rows: Row[] = [
     ['redirectToAccount'],
   ],
   // IdentityLost
-  [
-    'IdentityLost verify',
-    s('IdentityLost', { orderId: 'o1' }),
-    ev('verify'),
-    'StartingEid',
-    ['startEidSession'],
-  ],
+  ['IdentityLost verify', s('IdentityLost', { orderId: 'o1' }), ev('verify'), 'StartingEid', []],
   // OrderNotFound
   [
     'OrderNotFound back to plans',
@@ -527,13 +496,7 @@ const rows: Row[] = [
   ],
   // Gate step 3
   ['Gate3 sub', gateMe(), meOk(true), 'Account', ['redirectToAccount']],
-  [
-    'Gate3 401',
-    gateMe(),
-    { type: 'meFailed', ...failed('unauthenticated') },
-    'StartingEid',
-    ['startEidSession'],
-  ],
+  ['Gate3 401', gateMe(), { type: 'meFailed', ...failed('unauthenticated') }, 'StartingEid', []],
   ['Gate3 5xx', gateMe(), { type: 'meFailed', ...failed('server') }, 'Review', ['fetchPlans']],
   ['Gate3 network', gateMe(), { type: 'meFailed', ...failed('network') }, 'Review', ['fetchPlans']],
   ['Gate3 200', gateMe(), meOk(), 'CreatingOrder', ['createOrder']],
@@ -600,7 +563,6 @@ const ALL_EVENTS: FlowEvent[] = [
   meOk(true),
   { type: 'meFailed', ...failed('server') },
   { type: 'select', planId: 'plan_std_m' },
-  { type: 'sessionCreated', redirectUrl: 'http://x' },
   { type: 'sessionFailed', ...failed('server') },
   ev('countdownElapsed'),
   { type: 'plansChecked', planFound: true },
@@ -683,14 +645,14 @@ describe('machine', () => {
       eid429(45),
       {
         state: { retryAfterSec: 45, ready: false },
-        effects: [{ type: 'startCountdown', seconds: 45 }],
+        effects: [],
       },
     ],
     [
       '429 without Retry-After falls back to 30 (Q35)',
       s('StartingEid'),
       eid429(),
-      { state: { retryAfterSec: 30 }, effects: [{ type: 'startCountdown', seconds: 30 }] },
+      { state: { retryAfterSec: 30 }, effects: [] },
     ],
     [
       'Review plan missing → plan_unavailable',
@@ -710,7 +672,7 @@ describe('machine', () => {
       { type: 'select', planId: 'plan_prem_m' },
       {
         state: { ctx: { planId: 'plan_prem_m' } },
-        effects: [{ type: 'startEidSession', planId: 'plan_prem_m' }],
+        effects: [],
       },
     ],
     [
@@ -1080,6 +1042,27 @@ describe('machine', () => {
     test('pending → Polling', () => {
       expect(reduce(paymentReturn(true), order('pending')).state.name).toBe('Polling');
     });
+  });
+
+  test('StartingEid restored from bfcache → Plans or EidFailed(expired), no effects (Q69)', () => {
+    const start = s('StartingEid');
+    expect(reduce(start, { type: 'eidAbandoned', to: 'plans' })).toMatchObject({
+      state: { name: 'Plans' },
+      effects: [],
+    });
+    expect(reduce(start, { type: 'eidAbandoned', to: 'failed' })).toMatchObject({
+      state: { name: 'EidFailed', reason: 'expired' },
+      effects: [],
+    });
+  });
+
+  test('StartingEid never emits an effect: no eID redirect for a runner to double-fire', () => {
+    for (const event of ALL_EVENTS) {
+      expect(reduce(s('StartingEid'), event).effects, event.type).not.toContainEqual(
+        expect.objectContaining({ type: 'redirect' }),
+      );
+    }
+    expect(reduce(plans(), { type: 'select', planId: 'plan_std_m' }).effects).toEqual([]);
   });
 
   test('initialState starts at Entry', () => {

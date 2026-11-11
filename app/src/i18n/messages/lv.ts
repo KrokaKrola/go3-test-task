@@ -12,4 +12,35 @@ export const lv: Messages = {
   'plans.perMonth': '/ mēnesī',
   'plans.trial': '30 dienu bezmaksas izmēģinājums jauniem klientiem',
   'plans.faqHeading': 'Biežāk uzdotie jautājumi',
+  'eid.action.tryAgain': 'Mēģināt vēlreiz',
+  'eid.action.changePlan': 'Mainīt plānu',
+  'eid.action.startAgain': 'Sākt vēlreiz',
+  'eid.action.startAgainHere': 'Sākt vēlreiz šeit',
+  'eid.starting.title': 'Savienojamies ar eID',
+  'eid.starting.status': 'Savienojamies ar eID…',
+  'eid.opening': 'Atveram eID…',
+  'eid.startError.title': 'Šobrīd nevaram sākt eID',
+  'eid.startError.body':
+    'Mūsu pusē kaut kas nogāja greizi. Mēģiniet vēlreiz vai izvēlieties citu plānu.',
+  'eid.rateLimited.title': 'Pārāk daudz mēģinājumu',
+  'eid.rateLimited.waiting': 'Lūdzu, uzgaidiet pirms nākamā mēģinājuma.',
+  'eid.rateLimited.ready': 'Tagad varat mēģināt vēlreiz.',
+  'eid.rateLimited.seconds.zero': 'Mēģiniet vēlreiz pēc {count} sekundēm',
+  'eid.rateLimited.seconds.one': 'Mēģiniet vēlreiz pēc {count} sekundes',
+  'eid.rateLimited.seconds.few': 'Mēģiniet vēlreiz pēc {count} sekundēm',
+  'eid.rateLimited.seconds.other': 'Mēģiniet vēlreiz pēc {count} sekundēm',
+  'eid.failed.cancelled.title': 'eID pierakstīšanās atcelta',
+  'eid.failed.cancelled.body':
+    'Jūs atcēlāt pierakstīšanos. Lai turpinātu, mēģiniet vēlreiz vai izvēlieties citu plānu.',
+  'eid.failed.expired.title': 'eID pierakstīšanās beidzās',
+  'eid.failed.expired.body':
+    'Pierakstīšanās aizņēma pārāk ilgu laiku vai neizdevās. Lai turpinātu, mēģiniet vēlreiz.',
+  'eid.verifying.title': 'Apstiprinām jūsu identitāti',
+  'eid.verifying.status': 'Apstiprinām jūsu identitāti…',
+  'eid.verifyError.title': 'Neizdevās apstiprināt jūsu identitāti',
+  'eid.verifyError.body':
+    'Neizdevās sazināties ar mūsu pakalpojumu. Mēģiniet vēlreiz vai sāciet pierakstīšanos no jauna.',
+  'eid.otherBrowser.title': 'Turpiniet pārlūkprogrammā, kurā sākāt',
+  'eid.otherBrowser.body':
+    'Šķiet, ka atgriezāties citā pārlūkprogrammā. Turpiniet tur, kur sākāt, vai sāciet vēlreiz šeit.',
 };

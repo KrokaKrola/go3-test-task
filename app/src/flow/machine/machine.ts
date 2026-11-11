@@ -61,8 +61,9 @@ export type FlowEvent =
   | { type: 'meLoaded'; me: Pick<MeResponse, 'activeSubscription'> }
   | { type: 'meFailed'; error: ApiError }
   | { type: 'select'; planId: string }
-  | { type: 'sessionCreated'; redirectUrl: string }
   | { type: 'sessionFailed'; error: ApiError }
+  // Back from the eID provider restored StartingEid from the bfcache (Q69).
+  | { type: 'eidAbandoned'; to: 'plans' | 'failed' }
   | { type: 'countdownElapsed' }
   | { type: 'plansChecked'; planFound: boolean }
   | { type: 'plansFailed'; error: ApiError }
@@ -87,8 +88,6 @@ export type FlowEvent =
 export type FlowEffect =
   | { type: 'fetchMe' }
   | { type: 'fetchPlans' }
-  | { type: 'startEidSession'; planId: string | null }
-  | { type: 'startCountdown'; seconds: number }
   | { type: 'replaceHistory' }
   | { type: 'fetchOrder'; orderId: string }
   | { type: 'createOrder'; planId: string }
@@ -107,6 +106,8 @@ const NOTICE_BY_FAILURE: Record<PaymentFailReason, Notice> = {
   declined: 'payment_declined',
 };
 
+// StartingEid and RateLimited emit no effects: StartEid owns POST + track + redirect, RateLimited its
+// countdown (Q69). The `redirect` effect is for payment URLs only.
 export function initialState(ctx: FlowContext): FlowState {
   return { name: 'Entry', ctx };
 }
@@ -119,10 +120,6 @@ function enter(state: FlowState): Transition {
     case 'Entry':
     case 'Verifying':
       return { state, effects: [{ type: 'fetchMe' }] };
-    case 'StartingEid':
-      return { state, effects: [{ type: 'startEidSession', planId: ctx.planId }] };
-    case 'RateLimited':
-      return { state, effects: [{ type: 'startCountdown', seconds: state.retryAfterSec }] };
     case 'EidCallback': {
       const next: FlowState =
         state.status === 'ok'
@@ -279,8 +276,10 @@ export function reduce(state: FlowState, event: FlowEvent): Transition {
       return stay(state);
 
     case 'StartingEid':
-      if (event.type === 'sessionCreated')
-        return { state, effects: [{ type: 'redirect', url: event.redirectUrl }] };
+      if (event.type === 'eidAbandoned')
+        return event.to === 'plans'
+          ? go(plans(ctx))
+          : go({ name: 'EidFailed', ctx, reason: 'expired' });
       if (event.type === 'sessionFailed')
         return event.error.kind === 'rateLimited'
           ? go({
