@@ -27,7 +27,7 @@ What the docs give: "Estonian, Latvian, Lithuanian and English" [D brief], not 3
 |---|---|---|
 | `/{market}/{locale}/` (Plans), `/{market}/{locale}/review/` etc. | `ee/et`, `ee/en`, `lt/lt`, `lt/en`; `lv/lv`, `lv/en` only with `market.LV` on (Q13). Lowercase. `generateStaticParams` builds exactly these | build: page list = enabled pairs. e2e: each pair renders its CMS `headline` |
 | `/auth/callback`, `/payment/return` | No market or locale in the path [D API, Mock]. Fixed by the provider allowlist (02) | e2e |
-| `/` | Client redirect: first `navigator.languages` match among enabled pairs, else `/ee/et/`. Static export can't read `Accept-Language`, so Q14 is done client-side | unit (pick function), e2e |
+| `/` | Client redirect: first `navigator.languages` match among enabled pairs, else `/ee/et/`. Static export can't read `Accept-Language`, so Q14 is done client-side. `en` tie-break between markets: Q55 | unit (pick function), e2e |
 | `<html lang>` | = locale on every page. Callbacks: static HTML has a fixed `lang`, so it renders no text until context is read and `lang` is set | e2e: on callbacks, `lang` = context locale before the first text node appears |
 
 ### Fallback
