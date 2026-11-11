@@ -8,4 +8,8 @@ export const lt: Messages = {
   'language.en': 'English',
   'root.redirecting': 'Nukreipiame į jūsų kalbą',
   'root.continue': 'Tęsti',
+  'plans.choose': 'Pasirinkti',
+  'plans.perMonth': '/ mėn.',
+  'plans.trial': '30 dienų nemokamas bandomasis laikotarpis naujiems klientams',
+  'plans.faqHeading': 'Dažnai užduodami klausimai',
 };

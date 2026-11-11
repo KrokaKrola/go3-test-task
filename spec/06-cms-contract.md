@@ -9,7 +9,7 @@ Field marks: **[D]** in `docs/03-cms-content-model.md` · **[F]** fixtures/mock 
 - Fetched **at build only** [D]. A CMS publish triggers a rebuild [D]. No runtime CMS call.
 - Mock: `GET /cms/v1/plan-pages?market=EE&locale=et` [F]. `market` uppercase, `locale` lowercase. 404 when the pair has no entry [F].
 - Pairs: local language + `en` per market (Q24): `EE/et`, `EE/en`, `LT/lt`, `LT/en`, `LV/lv`, `LV/en`.
-- One pure module `parsePlanPage(raw, apiPlans, { marketEnabled })` → `{ page, warnings }` or throws `CmsValidationError`. Unit-tested against all 6 fixtures. Components never read the raw entry.
+- One pure module `parsePlanPage(raw, apiPlans, { marketEnabled, market, locale })` → `{ page, warnings }` or throws `CmsValidationError`. Disabled market: no throw, errors become warnings and `page` is `null` (Q67). Unit-tested against all 6 fixtures. Components never read the raw entry.
 
 ## Build gate
 

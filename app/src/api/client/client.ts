@@ -1,70 +1,22 @@
 import type { z } from 'zod';
 import { getConfig } from '@/config';
 import type { Market } from '@/domain/markets/markets';
-import {
-  abortedError,
-  invalidResponseError,
-  networkError,
-  toApiError,
-  type Endpoint,
-} from '@/api/errors/errors';
+import { fetchMe } from '@/api/me/me';
+import { REQUEST_TIMEOUT_MS, requestJson, type RequestOptions } from '@/api/request/request';
 import {
   createOrderResponseSchema,
   identitySessionResponseSchema,
-  meResponseSchema,
   orderResponseSchema,
   plansResponseSchema,
 } from '@/api/schemas/schemas';
 
-type RequestOptions<S extends z.ZodType> = {
-  endpoint: Endpoint;
-  path: string;
-  schema: S;
-  method?: 'GET' | 'POST';
-  body?: unknown;
-  headers?: Record<string, string>;
-  signal?: AbortSignal;
-};
-
-export const REQUEST_TIMEOUT_MS = 15_000;
+export { REQUEST_TIMEOUT_MS };
 
 const apiMarket = (market: Market) => market.toUpperCase();
 
-export async function request<S extends z.ZodType>(
-  options: RequestOptions<S>,
-): Promise<z.infer<S>> {
-  const { endpoint, path, schema, method = 'GET', body, headers, signal } = options;
-
-  const url = `${getConfig().API_BASE}${path}`;
-  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method,
-      credentials: 'include',
-      headers: { 'content-type': 'application/json', ...headers },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-    });
-  } catch (thrown) {
-    if (signal?.aborted) throw abortedError();
-    throw await toApiError(thrown, endpoint);
-  }
-
-  if (!response.ok) throw await toApiError(response, endpoint);
-
-  let json: unknown;
-  try {
-    json = await response.json();
-  } catch {
-    if (signal?.aborted) throw abortedError();
-    if (timeout.aborted) throw networkError();
-    json = undefined;
-  }
-  const parsed = schema.safeParse(json);
-  if (!parsed.success) throw invalidResponseError(response.status);
-  return parsed.data;
-}
+export const request = <S extends z.ZodType>(
+  options: Omit<RequestOptions<z.infer<S>>, 'apiBase' | 'schema'> & { schema: S },
+): Promise<z.infer<S>> => requestJson({ ...options, apiBase: getConfig().API_BASE });
 
 export const getPlans = (market: Market, signal?: AbortSignal) =>
   request({
@@ -83,8 +35,7 @@ export const createIdentitySession = (returnUrl: string) =>
     schema: identitySessionResponseSchema,
   });
 
-export const getMe = (signal?: AbortSignal) =>
-  request({ endpoint: 'me', path: '/v1/me', signal, schema: meResponseSchema });
+export const getMe = (signal?: AbortSignal) => fetchMe(getConfig().API_BASE, signal);
 
 // No signal on purpose: aborting a POST leaves it unknown whether the order exists (Q34).
 export const createOrder = (body: { planId: string; market: Market; returnUrl: string }) =>

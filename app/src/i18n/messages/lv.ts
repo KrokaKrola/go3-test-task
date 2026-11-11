@@ -8,4 +8,8 @@ export const lv: Messages = {
   'language.en': 'English',
   'root.redirecting': 'Novirzām uz jūsu valodu',
   'root.continue': 'Turpināt',
+  'plans.choose': 'Izvēlēties',
+  'plans.perMonth': '/ mēnesī',
+  'plans.trial': '30 dienu bezmaksas izmēģinājums jauniem klientiem',
+  'plans.faqHeading': 'Biežāk uzdotie jautājumi',
 };

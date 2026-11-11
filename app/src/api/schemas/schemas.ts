@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export { meResponseSchema, type MeResponse } from '@/api/me/me';
+
 export const plansResponseSchema = z.object({
   market: z.string(),
   plans: z.array(
@@ -16,14 +18,6 @@ export const plansResponseSchema = z.object({
 export const identitySessionResponseSchema = z.object({
   sessionId: z.string(),
   redirectUrl: z.string(),
-});
-
-export const meResponseSchema = z.object({
-  customerId: z.string(),
-  activeSubscription: z
-    .object({ planId: z.string(), status: z.string(), renewsAt: z.string() })
-    .nullable(),
-  trialEligible: z.boolean(),
 });
 
 export const createOrderResponseSchema = z.object({
@@ -43,6 +37,5 @@ export const orderResponseSchema = z.object({
 
 export type PlansResponse = z.infer<typeof plansResponseSchema>;
 export type IdentitySessionResponse = z.infer<typeof identitySessionResponseSchema>;
-export type MeResponse = z.infer<typeof meResponseSchema>;
 export type CreateOrderResponse = z.infer<typeof createOrderResponseSchema>;
 export type OrderResponse = z.infer<typeof orderResponseSchema>;

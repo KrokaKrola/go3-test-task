@@ -1,0 +1,36 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.badge {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  background: #0b5fff;
+  color: #fff;
+  font-size: 0.875rem;
+}
+
+.price {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.perMonth,
+.trial {
+  margin: 0;
+}
+
+.select {
+  min-height: 44px;
+  min-width: 44px;
+  margin-top: auto;
+  cursor: pointer;
+}

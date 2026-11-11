@@ -8,4 +8,8 @@ export const et: Messages = {
   'language.en': 'English',
   'root.redirecting': 'Suuname sind sinu keelele',
   'root.continue': 'Jätka',
+  'plans.choose': 'Vali',
+  'plans.perMonth': '/ kuus',
+  'plans.trial': '30-päevane tasuta prooviperiood uutele klientidele',
+  'plans.faqHeading': 'Korduma kippuvad küsimused',
 };
