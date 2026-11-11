@@ -13,6 +13,12 @@ describe('config', () => {
     expect(flags['market.LV']).toBe(false);
   });
 
+  it('GTM_ID optional, malformed fails loudly', () => {
+    expect(parseConfig(base).GTM_ID).toBeUndefined();
+    expect(parseConfig({ ...base, NEXT_PUBLIC_GTM_ID: 'GTM-AB12' }).GTM_ID).toBe('GTM-AB12');
+    expect(() => parseConfig({ ...base, NEXT_PUBLIC_GTM_ID: 'bad' })).toThrow(/NEXT_PUBLIC_GTM_ID/);
+  });
+
   it('rejects missing API_BASE', () => {
     expect(() => parseConfig({ ...base, NEXT_PUBLIC_API_BASE: undefined })).toThrow(
       /NEXT_PUBLIC_API_BASE/,

@@ -9,6 +9,10 @@ const flag = (defaultValue: boolean) =>
 const envSchema = z.object({
   NEXT_PUBLIC_API_BASE: z.url({ protocol: /^https?$/ }),
   NEXT_PUBLIC_ACCOUNT_URL: z.url({ protocol: /^https?$/ }),
+  NEXT_PUBLIC_GTM_ID: z
+    .string()
+    .regex(/^GTM-[A-Z0-9]+$/)
+    .optional(),
   NEXT_PUBLIC_FLAG_REVIEW_STEP: flag(true),
   NEXT_PUBLIC_FLAG_MARKET_LV: flag(false),
 });
@@ -16,6 +20,7 @@ const envSchema = z.object({
 export type Config = {
   API_BASE: string;
   ACCOUNT_URL: string;
+  GTM_ID?: string;
   flags: { reviewStep: boolean; 'market.LV': boolean };
 };
 
@@ -24,6 +29,7 @@ export function parseConfig(env: Record<string, string | undefined>): Config {
   return {
     API_BASE: parsed.NEXT_PUBLIC_API_BASE.replace(/\/$/, ''),
     ACCOUNT_URL: parsed.NEXT_PUBLIC_ACCOUNT_URL,
+    GTM_ID: parsed.NEXT_PUBLIC_GTM_ID,
     flags: {
       reviewStep: parsed.NEXT_PUBLIC_FLAG_REVIEW_STEP,
       'market.LV': parsed.NEXT_PUBLIC_FLAG_MARKET_LV,
@@ -38,6 +44,7 @@ export function getConfig(): Config {
   cached ??= parseConfig({
     NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE,
     NEXT_PUBLIC_ACCOUNT_URL: process.env.NEXT_PUBLIC_ACCOUNT_URL,
+    NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID,
     NEXT_PUBLIC_FLAG_REVIEW_STEP: process.env.NEXT_PUBLIC_FLAG_REVIEW_STEP,
     NEXT_PUBLIC_FLAG_MARKET_LV: process.env.NEXT_PUBLIC_FLAG_MARKET_LV,
   });

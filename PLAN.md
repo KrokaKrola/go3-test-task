@@ -92,4 +92,9 @@ Each step is one work item from `spec/11-work-items.md`, done in one AI session.
 
 - `clearUtm` on consent withdrawal (07 "Withdrawal clears our keys"): build in W-06 with the consent adapter.
 
+### Deferred from W-06 review (after basic flow works)
+
+- Medium: bfcache flag `skipNextPlanViewed` (`analytics.ts`) is never cleared. Any `pageshow.persisted` (e.g. Review restored after Back from the payment provider) drops the next real `plan_viewed`, even after client nav to Plans. Fix: module flag `planViewedSent` (once per document load, which bfcache keeps), remove the `pageshow` listener, update Q62.
+- `clearUtm` on consent `denied` (07 "Withdrawal clears our keys"): still not built. Subscribe to consent in the CMP bridge, or as a W-05 follow-up.
+
 Record every cut in README "What I cut".
