@@ -18,6 +18,7 @@ You build one task in the Nordlight subscribe flow. `CLAUDE.md` is binding; this
 - **Spec first.** Behaviour the spec lacks → edit the spec file, then the code. Answer belongs to another team → add it to `spec/03-open-questions.md` with an owner, build on the assumption.
 - **Never claim coverage you didn't check.** Before saying "W-xx / spec covers it", grep the spec and quote the line. A gap goes into the spec or `spec/03`, not into a promise.
 - **Scope = the item.** Build only what it lists; no drive-by refactors.
+- **One folder per module.** Under a touched folder (`src/api/`, `src/domain/`, `src/flow/`, …) each module gets its own subfolder with its test beside it: `src/api/errors/errors.ts` + `errors.test.ts`. Nothing loose at the folder root, no `index.ts` barrels, import the file directly (`../errors/errors`). Test file names stay as the AC names them.
 
 ## Tests
 

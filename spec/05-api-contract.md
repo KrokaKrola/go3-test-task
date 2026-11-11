@@ -69,8 +69,10 @@ One adapter, `toApiError(response | thrown)` → `{status, code, message, retryA
 
 1. `{errors:[{code, message}, …]}` → first entry.
 2. `{error: "message"}`, non-JSON or empty body → `code` from status: 400 `invalid_request`, 401 `unauthenticated`, 404 `not_found`, 409 `conflict`, 429 `rate_limited`, 5xx `internal_error`.
-3. fetch rejects or times out → `{status: 0, code: 'network'}`.
-4. 429 → `retryAfterSec` from `Retry-After` (seconds), else 30 (Q35).
+3. fetch rejects or times out (Q57) → `{status: 0, code: 'network'}`.
+4. 429 on identity (kind `rateLimited`) → `retryAfterSec` from `Retry-After` (seconds), else 30 (Q35). Other statuses carry none (Q42).
+5. A 2xx body that fails its schema → `{status, code: 'invalid_response', kind: 'server'}` (Q56). An unlisted 4xx gets code `request_failed` (Q56).
+6. Timeout is 15 s per request; caller abort → `code: 'aborted'` (Q57). `message` is diagnostics only; UI copy comes from `kind`.
 
 Then `kind` from endpoint + status + code [M]. An unknown code takes the kind of its status. 429 outside identity counts as `server` (Q42).
 
