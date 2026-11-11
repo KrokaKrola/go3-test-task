@@ -73,6 +73,9 @@ function hasPurchaseGuard(orderId: string): boolean {
   }
 }
 
+export const purchaseSent = (orderId: string): boolean =>
+  purchasesSeen.has(orderId) || hasPurchaseGuard(orderId);
+
 function writePurchaseGuard(orderId: string): void {
   try {
     localStorage.setItem(purchaseGuardKey(orderId), '1');

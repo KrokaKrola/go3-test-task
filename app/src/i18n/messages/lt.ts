@@ -72,4 +72,26 @@ export const lt: Messages = {
   'review.paying': 'Apdorojame užsakymą…',
   'review.opening': 'Atidarome mokėjimą…',
   'review.changePlan': 'Keisti planą',
+  'payment.polling.title': 'Patvirtiname jūsų mokėjimą',
+  'payment.polling.status': 'Patvirtiname jūsų mokėjimą…',
+  'payment.polling.stillConfirming':
+    'Mokėjimą vis dar tvirtiname. Tai gali užtrukti šiek tiek ilgiau.',
+  'payment.polling.connectionIssue': 'Ryšio problema, vis dar tikriname…',
+  'payment.orderId': 'Užsakymo ID:',
+  'payment.unconfirmed.title': 'Netrukus patvirtinsime',
+  'payment.unconfirmed.body':
+    'Mokėjimo patvirtinimo dar negavome. Netrukus jį patvirtinsime. Galite patikrinti dar kartą arba eiti į savo paskyrą.',
+  'payment.identityLost.title': 'Patvirtinkite tapatybę, kad matytumėte mokėjimo būseną',
+  'payment.identityLost.body':
+    'Negalime parodyti mokėjimo būsenos, kol vėl nepatvirtinsite tapatybės.',
+  'payment.orderNotFound.title': 'Nerandame šio užsakymo',
+  'payment.orderNotFound.body': 'Neradome užsakymo su šiuo ID.',
+  'payment.confirmed.title': 'Mokėjimas patvirtintas',
+  'payment.confirmed.body': 'Ačiū už mokėjimą.',
+  'payment.confirmed.plan': 'Planas:',
+  'payment.confirmed.trial': 'Jūsų 30 dienų nemokamas bandomasis laikotarpis įtrauktas.',
+  'payment.action.checkAgain': 'Patikrinti dar kartą',
+  'payment.action.verify': 'Patvirtinti tapatybę',
+  'payment.action.goToAccount': 'Eiti į paskyrą',
+  'payment.action.backToPlans': 'Atgal į planus',
 };

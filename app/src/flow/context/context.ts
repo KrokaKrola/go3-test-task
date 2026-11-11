@@ -76,6 +76,10 @@ export function saveStoredParams(storage: Pick<Storage, 'setItem'>, params: Flow
   }
 }
 
+export function clearStoredParams(storage: Pick<Storage, 'removeItem'>): void {
+  storage.removeItem(STORAGE_KEY);
+}
+
 // 04 invariant 2: plan/market/locale stored beats query. orderId and UTMs fall back per field.
 export function resolveFlowParams(
   storage: Pick<Storage, 'getItem'>,

@@ -85,7 +85,7 @@ Each step is one work item from `spec/11-work-items.md`, done in one AI session.
 ### Deferred from W-04 review (check later)
 
 - Low: the flow store keeps only the last dispatch's effects, so two dispatches before the runner reads lose the first set. The runner must read through synchronous `subscribe`, or `dispatch` must return the effects. Check when the effect runner is built.
-- `startEidSession` effect carries only `planId`. `returnUrl` also needs market, locale and `reverifyOrderId` (04 inv 5). Check when W-09 wires eID start.
+- ~~`startEidSession` effect carries only `planId`.~~ Resolved in W-09: the effect was removed, and StartEid builds `returnUrl` from the flow context. Still check that `reverifyOrderId` (04 inv 5) is carried once W-11/W-12 reach StartingEid.
 - Stale results: `orderLoaded`/`orderFailed` carry no `orderId`, so a late result from another fetch (polling tick, double `retryCheck`) is accepted. Add `orderId` to these events and ignore mismatches. Check when the polling runner is built.
 
 ### Deferred from W-05 review (check later)
@@ -103,5 +103,59 @@ Each step is one work item from `spec/11-work-items.md`, done in one AI session.
 - `e2e/smoke.spec.ts`: the test name says "/" but axe runs on the redirect target (`/ee/en/` under en-US Playwright). Check later: rename it, or also run axe on `/` with the redirect stubbed.
 - W-09: a stored flow context saved before a language switch keeps the old locale (stored beats query, `flow/context.ts`), so the eID or payment return lands in the old language. Save the context at eID start, or update the stored locale on switch (Q63).
 - W-10: strip `?notice=` with `history.replaceState(null, '', url)` or `router.replace`, never `replaceState(history.state, …)`. Next ignores the latter (its `__NA` state), so `useSearchParams` and the switcher href keep the old query.
+
+### Deferred from W-09 review (check later)
+
+- ~~W-10, security: `rungate=1` (Q68(b)) is a plain query flag~~ Resolved after W-10: `flow/runGateToken` one-time sessionStorage token, Q68(b) updated. Original note: that anyone can forge. A crafted `/ee/et/?plan=premium&rungate=1` sent to an identified user, with reviewStep off, would run the Gate and create an order with no click (04 inv 1). Fix: before the callback's `location.replace`, write a one-time sessionStorage token `nl_run_gate=<planKey>`. Plans runs the Gate only when the marker and the token match the same plan, then clears both. If the token is missing or doesn't match, show Plans. Update the Q68(b) wording.
+- Test gap: `ALL_EVENTS` (`machine.test.ts`) has no `eidAbandoned` (`plans`/`failed`), so the sweeps over all events skip it. The test "StartingEid never emits an effect" only asserts "no redirect"; tighten it to `effects` `toEqual([])`.
+- W-11/W-12: no effect signals StartingEid now. Any page that can reach it (CreatingOrder 401, IdentityLost Verify) must render `EidScreen`/`StartEid` with the right `redirect` prop (`machine.ts:109`).
+
+### Deferred from W-10 review (check later)
+
+- Still open from the W-07 note above: `flow/notice/notice.ts:19` calls `replaceState(window.history.state, …)`, the form that note warns against.
+- A11y: the same Gate error twice gets no refocus and no announcement: the `alert` text doesn't change, so focus stays on Try again. Fix: refocus when busy ends (`RetryPoint.tsx` focus effect: add `!busy` and `busy` to deps).
+- A11y/bug: "Check again" has no in-flight guard. Two clicks send two GETs, with no busy text and no live region message (08 l.82). Use the same busy pattern as Try again.
+- CLS (08): the retry banner first appears only after `/v1/me` resolves (Entry → Plans), so it shifts the cards. Render the URL notice from the first client render, or reserve a slot.
+- Design: the URL notice is owned by `RetryPoint` state, not the machine. The rule "no Try again on `plan_unavailable`" sits in the UI, not the `tryAgain` guard. `lastPlansView` (`PlansController.tsx:90-91`) is a copy of state; the Gate state could carry the retry view instead.
+- Q70(a): the `chosenPlanId()` URL fallback goes through `parseFlowParams`, so it needs `?market` and `?locale`, while rungate reads `?plan=` directly. Use one helper, or change the Q70 wording.
+- Test gap: Resume "Check status" isn't tested through the controller. Add a PlansPage test asserting PaymentReturn and `fetchOrder('o1')`. Also add a test that a card Select (not only Try again) picks up an open order written by another tab.
+- `api/order/order.ts` copies `orderResponseSchema` (`api/schemas/schemas.ts`), so the two can drift. Point one at the other, or move `schemas.ts` to `zod/mini`.
+- Nits: rename `runGateEffect` (it also runs Entry/Verifying `fetchMe` and `clearOpenOrder`; e.g. `runFlowIoEffect`) and drop its unused boolean return. `role="alert"` plus focus may make a banner read twice. Rename `Storage_` to `KeyValueStorage`.
+- i18n: the et/lv/lt `retry.*` strings are AI translations and need a native check.
+- Assumed: "preselected" means the banner plus the plan title and Try again above the cards; the cards aren't marked (Q70). Gate paid → Confirmed doesn't clear the open order (W-12 `purchase` step).
+
+### Deferred from W-11 review (check later)
+
+- W-12 must build `/payment/return/`: Review's Gate → Confirmed / IdentityLost and Resume "Check status" go there (04 Review row) and 404 until then.
+- Design: `Review.tsx` is too big and repeats PlansController (gateDeps, `run`, `lastView` mirror, retry-focus state). Extract a `useReviewFlow` hook or controller.
+- Design: bfcache restore sets state directly (`Review.tsx` `reviewState(ctx)`, `PlansController.tsx` reset to Plans), bypassing the machine. Model it as a machine event (`restored`).
+- A11y (08 in-flight buttons): Pay is `aria-disabled` but keeps its label; busy text lives only in the live region. Show visible busy text or swap the label (check with Legal).
+- Q69 gap: Pay → 401 → eID → browser Back restores to Plans, not Review (`useEidRestore(store, 'plans')`). Add the Review case to Q69/Q72 or restore to Review.
+- A11y (08 l.74): after a bfcache restore, focus doesn't move to the `<h1>`.
+- A11y (axe `region`): the `RetryPoint` banner sits outside `<main>` on Review and Plans.
+- Test gap: `PlansPage.test.tsx` cards use `id_*` plan ids, so the Plans → Review navigate test can't assert `?plan=`. Use `planIdFor(planKey)` in the fixture.
+- i18n: `review.consent` is placeholder wording for Legal; et/lv/lt `review.*` are AI translations and need a native check.
+
+### Deferred from W-12 review (check later)
+
+- Consent-pending `purchase` on Confirmed reload: Q75 (no snapshot + consent not `granted` → no `purchase`, guard rule unchanged). Build it in `confirmOrder`; add `pending` reload and no-snapshot cases to `Confirmed.test.tsx`.
+- A11y/bug: Unconfirmed "Check again" has no in-flight guard: two clicks send two GETs. No busy text, no live region, and a 5xx or `pending` reply leaves the screen unchanged (08). Use the busy pattern and add a `LiveRegion` ("Checking…" / "Connection issue").
+- Inv 6: a bfcache restore on Polling/Unconfirmed re-runs nothing (`PaymentReturn.tsx`). Back from `actionUrl` resumes a frozen poller with a stale `startedAt` and `redirectedThisCycle` still true. Fix: on `pageshow.persisted` in a non-eID state, stop the poller and `begin` again.
+- A11y (08 redirect rule): the `actionUrl` redirect is instant, with no "Opening…" announcement and no 300 ms minimum. Reuse the redirect timing, or add a Q saying it doesn't apply without a click.
+- Test gap: no unit tests for `flow/orderPoller` and `flow/confirmOrder` (Q74(c) `/v1/plans` fails → no event, `alreadySent`, open order with another id, poller stopped inside `onOrder`). No `exitUrl.test.ts` rows for the Plans retry branch (payment notice keeps `plan`; none/`plan_unavailable` drops it).
+- i18n: Confirmed shows the raw plan id (`plan_std_m`) when no CMS title is known. Hide the plan line instead, and update Q74(d).
+- Design: `PaymentReturn.tsx` (263 lines) mixes page host, effect runner, exits and rendering. `getMe` is a fake reject dependency (line ~129); EXIT_STATES runs only `clearOpenOrder` by hand, so new effects would be skipped. Extract `usePaymentFlow` and split `runGateEffect` so this page needs no `getMe`.
+- Machine (W-04): PaymentReturn sends any GET error (401/404 included) to Polling, so IdentityLost and OrderNotFound show only after the first poll (2 s).
+- `spec/03`: move Q74 from P3 to P1.
+- Nits:
+  - `isPaymentNotice(notice?: string)` should take `Notice`.
+  - `paymentTestKit.tsx` fixture has `trial: 'true'` with `value: 11.15`; 07 says value 0 with a trial.
+  - `api/order/order.ts`: `actionUrl` is a plain `z.string()` passed to `location.assign`; allow only https.
+  - On a flaky network the live region flips between "Connection issue" and "Confirming…" every poll; keep "Connection issue" until 2 polls in a row succeed.
+  - 04: a poll `failed` is "declined" even with `cancelled=1` in the URL; consider a Q.
+  - `setCommonSource` is never reset on unmount.
+  - `en` "Order id:" should read "Order ID:".
+  - `Polling.test.tsx` "Back to plans" checks only that a navigation happened, not where it went.
+- i18n: the et/lv/lt `payment.*` strings are AI translations and need a native check.
 
 Record every cut in README "What I cut".

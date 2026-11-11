@@ -72,4 +72,26 @@ export const lv: Messages = {
   'review.paying': 'Apstrādājam pasūtījumu…',
   'review.opening': 'Atveram maksājumu…',
   'review.changePlan': 'Mainīt plānu',
+  'payment.polling.title': 'Apstiprinām jūsu maksājumu',
+  'payment.polling.status': 'Apstiprinām jūsu maksājumu…',
+  'payment.polling.stillConfirming':
+    'Joprojām apstiprinām maksājumu. Tas var aizņemt nedaudz ilgāk.',
+  'payment.polling.connectionIssue': 'Savienojuma problēma, joprojām pārbaudām…',
+  'payment.orderId': 'Pasūtījuma ID:',
+  'payment.unconfirmed.title': 'Drīz apstiprināsim',
+  'payment.unconfirmed.body':
+    'Maksājuma apstiprinājums vēl nav saņemts. Drīz to apstiprināsim. Varat pārbaudīt vēlreiz vai doties uz savu kontu.',
+  'payment.identityLost.title': 'Lai redzētu maksājuma statusu, apstipriniet savu identitāti',
+  'payment.identityLost.body':
+    'Mēs nevaram parādīt maksājuma statusu, kamēr vēlreiz neapstiprināt savu identitāti.',
+  'payment.orderNotFound.title': 'Mēs neatrodam šo pasūtījumu',
+  'payment.orderNotFound.body': 'Mēs neatradām pasūtījumu ar šo ID.',
+  'payment.confirmed.title': 'Maksājums apstiprināts',
+  'payment.confirmed.body': 'Paldies par maksājumu.',
+  'payment.confirmed.plan': 'Plāns:',
+  'payment.confirmed.trial': 'Jūsu 30 dienu bezmaksas izmēģinājums ir iekļauts.',
+  'payment.action.checkAgain': 'Pārbaudīt vēlreiz',
+  'payment.action.verify': 'Apstiprināt identitāti',
+  'payment.action.goToAccount': 'Doties uz kontu',
+  'payment.action.backToPlans': 'Atpakaļ pie plāniem',
 };

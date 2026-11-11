@@ -29,6 +29,19 @@ describe('exitUrl', () => {
     });
   });
 
+  it('Review with a notice carries it as ?notice=', () => {
+    const url = new URL(
+      urlOf({
+        name: 'Review',
+        ctx,
+        view: { notice: 'payment_declined' },
+        plansError: false,
+        consentError: false,
+      })!,
+    );
+    expect(url.searchParams.get('notice')).toBe('payment_declined');
+  });
+
   it('Plans (change plan) carries no plan', () => {
     const url = new URL(urlOf({ name: 'Plans', ctx, view: {} })!);
     expect(url.pathname).toBe('/lt/en/');

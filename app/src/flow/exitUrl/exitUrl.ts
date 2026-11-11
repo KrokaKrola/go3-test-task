@@ -9,6 +9,9 @@ import type { UtmSet } from '@/flow/utm/utm';
 // so a reload shows Plans or the retry point and never an automatic Gate run (inv. 1, Q68).
 export const RUN_GATE_PARAM = 'rungate';
 
+const isPaymentNotice = (notice?: string) =>
+  notice === 'payment_cancelled' || notice === 'payment_declined';
+
 // Where a page hands over once the machine leaves the states it renders. null = stay.
 export function exitUrl(
   state: FlowState,
@@ -28,15 +31,24 @@ export function exitUrl(
   switch (state.name) {
     case 'Account':
       return accountUrl;
-    case 'Review':
-      return buildFlowUrl(origin, `${home}review/`, params);
+    case 'Review': {
+      const url = new URL(buildFlowUrl(origin, `${home}review/`, params));
+      if (state.view.notice) url.searchParams.set(NOTICE_PARAM, state.view.notice);
+      return url.toString();
+    }
     case 'Gate': {
       const url = new URL(buildFlowUrl(origin, home, params));
       url.searchParams.set(RUN_GATE_PARAM, '1');
       return url.toString();
     }
     case 'Plans': {
-      const url = new URL(buildFlowUrl(origin, home, { ...params, plan: null }));
+      const url = new URL(
+        buildFlowUrl(origin, home, {
+          ...params,
+          // Retry point keeps the plan preselected (04 Terms); "Change plan" clears it.
+          plan: isPaymentNotice(state.view.notice) ? params.plan : null,
+        }),
+      );
       if (state.view.notice) url.searchParams.set(NOTICE_PARAM, state.view.notice);
       return url.toString();
     }

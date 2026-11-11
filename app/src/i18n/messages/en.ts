@@ -67,4 +67,26 @@ export const en = {
   'review.paying': 'Processing your order…',
   'review.opening': 'Opening payment…',
   'review.changePlan': 'Change plan',
+  'payment.polling.title': 'Confirming your payment',
+  'payment.polling.status': 'Confirming your payment…',
+  'payment.polling.stillConfirming':
+    'Still confirming your payment. This can take a little longer.',
+  'payment.polling.connectionIssue': 'Connection issue, still checking…',
+  'payment.orderId': 'Order id:',
+  'payment.unconfirmed.title': "We'll confirm shortly",
+  'payment.unconfirmed.body':
+    "We haven't received the payment confirmation yet. We'll confirm it shortly. You can check again or go to your account.",
+  'payment.identityLost.title': 'Verify to see your payment status',
+  'payment.identityLost.body':
+    "We can't show the status of your payment until you verify your identity again.",
+  'payment.orderNotFound.title': "We can't find this order",
+  'payment.orderNotFound.body': "We couldn't find an order with this id.",
+  'payment.confirmed.title': 'Payment confirmed',
+  'payment.confirmed.body': 'Thank you for your payment.',
+  'payment.confirmed.plan': 'Plan:',
+  'payment.confirmed.trial': 'Your 30-day free trial is included.',
+  'payment.action.checkAgain': 'Check again',
+  'payment.action.verify': 'Verify',
+  'payment.action.goToAccount': 'Go to account',
+  'payment.action.backToPlans': 'Back to plans',
 };
