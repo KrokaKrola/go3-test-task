@@ -94,7 +94,7 @@ Target WCAG 2.2 AA (Q21). Not in the brief, but the European Accessibility Act (
 | LCP | < 2.5 s | Lighthouse |
 | CLS | < 0.1 | Lighthouse; e2e: no layout shift entry > 0 after `/v1/me` resolves |
 | INP | < 200 ms. Lab proxy: TBT < 200 ms | Lighthouse (TBT). Field INP not measured (cut, PLAN.md) |
-| JS | ≤ 150 KB gzip first load on Plans, our code + framework. GTM and CMP excluded here (loaded after hydration) but included in LCP, INP, CLS. Framework alone is roughly 85–100 KB (estimate): measure at scaffold (PLAN 2.1) | build (sum of route chunks) |
+| JS | ≤ 200 KB gzip first load on Plans, our code + framework (Q54). GTM and CMP excluded here (loaded after hydration) but included in LCP, INP, CLS. Framework alone measured 174,176 B gzip at scaffold (W-01, Next 16) | build: gzip -9 sum of JS chunks referenced by the route's `out/**/index.html` (`next build` no longer prints First Load JS) |
 | Flow time | `plan_viewed` → `purchase` median < 2 min | GA (after launch, 07) |
 
 ### What Plans may wait for
