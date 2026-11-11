@@ -52,4 +52,19 @@ export const en = {
   'retry.resume.body':
     'We already have an order for you. Check its status instead of starting a new one.',
   'retry.busy': 'Checking…',
+  'review.title': 'Review your order',
+  'review.plan': 'Plan:',
+  'review.price': 'Price (incl. VAT):',
+  'review.perMonth': '/ month',
+  'review.trial': 'Your 30-day free trial is included.',
+  'review.loading': 'Loading the current price…',
+  'review.plansError': "We couldn't load the current price. Check your connection and try again.",
+  'review.retryPlans': 'Try again',
+  'review.consent':
+    'I accept the terms above and ask for the service to start now, under the withdrawal terms stated there.',
+  'review.consentError': 'Tick the box to accept the terms before ordering.',
+  'review.pay': 'Order with obligation to pay',
+  'review.paying': 'Processing your order…',
+  'review.opening': 'Opening payment…',
+  'review.changePlan': 'Change plan',
 };

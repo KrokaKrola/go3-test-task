@@ -55,4 +55,19 @@ export const et: Messages = {
   'retry.resume.body':
     'Sul on juba tellimus olemas. Kontrolli selle olekut, selle asemel et uus alustada.',
   'retry.busy': 'Kontrollime…',
+  'review.title': 'Vaata tellimus üle',
+  'review.plan': 'Pakett:',
+  'review.price': 'Hind (koos käibemaksuga):',
+  'review.perMonth': '/ kuu',
+  'review.trial': 'Sinu 30-päevane tasuta prooviperiood on kaasas.',
+  'review.loading': 'Laadime kehtivat hinda…',
+  'review.plansError': 'Me ei saanud kehtivat hinda laadida. Kontrolli ühendust ja proovi uuesti.',
+  'review.retryPlans': 'Proovi uuesti',
+  'review.consent':
+    'Nõustun ülaltoodud tingimustega ja palun teenuse kohe käivitada, arvestades seal toodud taganemistingimusi.',
+  'review.consentError': 'Enne tellimist märgi ruut, et tingimustega nõustuda.',
+  'review.pay': 'Telli maksekohustusega',
+  'review.paying': 'Töötleme sinu tellimust…',
+  'review.opening': 'Avame makse…',
+  'review.changePlan': 'Muuda paketti',
 };

@@ -56,4 +56,20 @@ export const lt: Messages = {
   'retry.resume.title': 'Jūsų mokėjimas vyksta',
   'retry.resume.body': 'Jau turite užsakymą. Patikrinkite jo būseną, užuot pradėję naują.',
   'retry.busy': 'Tikriname…',
+  'review.title': 'Peržiūrėkite užsakymą',
+  'review.plan': 'Planas:',
+  'review.price': 'Kaina (su PVM):',
+  'review.perMonth': '/ mėn.',
+  'review.trial': 'Į planą įskaičiuotas 30 dienų nemokamas bandomasis laikotarpis.',
+  'review.loading': 'Įkeliame dabartinę kainą…',
+  'review.plansError':
+    'Nepavyko įkelti dabartinės kainos. Patikrinkite ryšį ir bandykite dar kartą.',
+  'review.retryPlans': 'Bandyti dar kartą',
+  'review.consent':
+    'Sutinku su pirmiau pateiktomis sąlygomis ir prašau paslaugą pradėti teikti dabar, taikant ten nurodytas atsisakymo sąlygas.',
+  'review.consentError': 'Prieš užsakant pažymėkite langelį ir sutikite su sąlygomis.',
+  'review.pay': 'Užsakyti su mokėjimo pareiga',
+  'review.paying': 'Apdorojame užsakymą…',
+  'review.opening': 'Atidarome mokėjimą…',
+  'review.changePlan': 'Keisti planą',
 };

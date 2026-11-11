@@ -1,6 +1,7 @@
 import { buildFlowUrl } from '@/flow/context/context';
 import type { FlowParams } from '@/flow/context/context';
 import { planKeyFor } from '@/domain/plans/plans';
+import { NOTICE_PARAM } from '@/flow/notice/notice';
 import type { FlowState } from '@/flow/machine/machine';
 import type { UtmSet } from '@/flow/utm/utm';
 
@@ -8,7 +9,7 @@ import type { UtmSet } from '@/flow/utm/utm';
 // so a reload shows Plans or the retry point and never an automatic Gate run (inv. 1, Q68).
 export const RUN_GATE_PARAM = 'rungate';
 
-// Where the callback page hands over once the machine leaves its own states. null = stay.
+// Where a page hands over once the machine leaves the states it renders. null = stay.
 export function exitUrl(
   state: FlowState,
   utm: UtmSet,
@@ -34,8 +35,14 @@ export function exitUrl(
       url.searchParams.set(RUN_GATE_PARAM, '1');
       return url.toString();
     }
-    case 'Plans':
-      return buildFlowUrl(origin, home, { ...params, plan: null });
+    case 'Plans': {
+      const url = new URL(buildFlowUrl(origin, home, { ...params, plan: null }));
+      if (state.view.notice) url.searchParams.set(NOTICE_PARAM, state.view.notice);
+      return url.toString();
+    }
+    case 'Confirmed':
+    case 'IdentityLost':
+      return buildFlowUrl(origin, '/payment/return/', { ...params, orderId: state.orderId });
     case 'PaymentReturn':
       return state.orderId
         ? buildFlowUrl(origin, '/payment/return/', { ...params, orderId: state.orderId })

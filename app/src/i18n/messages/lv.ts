@@ -56,4 +56,20 @@ export const lv: Messages = {
   'retry.resume.title': 'Jūsu maksājums ir procesā',
   'retry.resume.body': 'Jums jau ir pasūtījums. Pārbaudiet tā statusu, nevis sāciet jaunu.',
   'retry.busy': 'Pārbaudām…',
+  'review.title': 'Pārskatiet pasūtījumu',
+  'review.plan': 'Plāns:',
+  'review.price': 'Cena (ar PVN):',
+  'review.perMonth': '/ mēnesī',
+  'review.trial': 'Jūsu 30 dienu bezmaksas izmēģinājums ir iekļauts.',
+  'review.loading': 'Ielādējam aktuālo cenu…',
+  'review.plansError':
+    'Neizdevās ielādēt aktuālo cenu. Pārbaudiet savienojumu un mēģiniet vēlreiz.',
+  'review.retryPlans': 'Mēģināt vēlreiz',
+  'review.consent':
+    'Piekrītu iepriekš minētajiem noteikumiem un lūdzu pakalpojumu sākt nekavējoties, ievērojot tur norādītos atteikuma tiesību noteikumus.',
+  'review.consentError': 'Pirms pasūtīšanas atzīmējiet rūtiņu, lai piekristu noteikumiem.',
+  'review.pay': 'Pasūtīt ar maksāšanas pienākumu',
+  'review.paying': 'Apstrādājam pasūtījumu…',
+  'review.opening': 'Atveram maksājumu…',
+  'review.changePlan': 'Mainīt plānu',
 };

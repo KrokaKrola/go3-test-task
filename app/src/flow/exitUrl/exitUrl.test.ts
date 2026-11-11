@@ -35,6 +35,19 @@ describe('exitUrl', () => {
     expect(url.searchParams.has('plan')).toBe(false);
   });
 
+  it('Plans with a notice carries it as ?notice=', () => {
+    const url = new URL(urlOf({ name: 'Plans', ctx, view: { notice: 'plan_unavailable' } })!);
+    expect(url.searchParams.get('notice')).toBe('plan_unavailable');
+  });
+
+  it('Confirmed and IdentityLost → payment return with the orderId', () => {
+    for (const name of ['Confirmed', 'IdentityLost'] as const) {
+      const url = new URL(urlOf({ name, ctx, orderId: 'o1' })!);
+      expect(url.pathname).toBe('/payment/return/');
+      expect(url.searchParams.get('orderId')).toBe('o1');
+    }
+  });
+
   it('Account → ACCOUNT_URL, own states → null', () => {
     expect(urlOf({ name: 'Account', ctx })).toBe('https://acc.test/');
     expect(urlOf({ name: 'Verifying', ctx })).toBeNull();

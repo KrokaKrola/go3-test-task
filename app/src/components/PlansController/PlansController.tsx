@@ -16,7 +16,7 @@ import type { Pair } from '@/domain/markets/markets';
 import { planIdFor } from '@/domain/plans/plans';
 import { sessionStore } from '@/flow/browserStorage/browserStorage';
 import { resolveFlowParams } from '@/flow/context/context';
-import { RUN_GATE_PARAM } from '@/flow/exitUrl/exitUrl';
+import { RUN_GATE_PARAM, exitUrl } from '@/flow/exitUrl/exitUrl';
 import { runGateEffect, type GateDeps } from '@/flow/gate/gate';
 import type { FlowEffect, FlowEvent, RetryView } from '@/flow/machine/machine';
 import { navigate } from '@/flow/navigate/navigate';
@@ -133,8 +133,25 @@ export function PlansController({
         gateIntentPlanId.current = null;
         if (gateIntent) selectNow(gateIntent, false);
       }
+      // Identified select with reviewStep on: Review is its own route (04 Plans exits).
+      if (next.state.name === 'Review' && previous.state.name === 'Plans') {
+        const target = exitUrl(
+          next.state,
+          readUtm(new URLSearchParams(window.location.search)),
+          accountUrl,
+          window.location.origin,
+        );
+        if (target) navigate(target);
+      }
       if (next.effects !== previous.effects) next.effects.forEach(run);
     });
+    // Back from /review/ restores Plans frozen in Review: show Plans again (inv. 6).
+    const onPageShow = (event: PageTransitionEvent) => {
+      const { state: current } = store.getState();
+      if (event.persisted && current.name === 'Review')
+        store.setState({ state: { name: 'Plans', ctx: current.ctx, view: {} }, effects: [] });
+    };
+    window.addEventListener('pageshow', onPageShow);
     dispatch({ type: 'begin' });
     // One-time marker from the callback (Q68): run the Gate for the URL plan only when this tab's
     // callback issued a token for it, so a crafted link can't create an order (inv. 1).
@@ -149,6 +166,7 @@ export function PlansController({
     return () => {
       abort.abort();
       unsubscribe();
+      window.removeEventListener('pageshow', onPageShow);
     };
     // selectNow only reads the store.
     // eslint-disable-next-line react-hooks/exhaustive-deps

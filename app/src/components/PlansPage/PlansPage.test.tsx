@@ -142,6 +142,24 @@ describe('PlansPage', () => {
     expect(store.getState().state.name).toBe('Review');
   });
 
+  it('identified select with reviewStep on navigates to the Review route', async () => {
+    await setup('identified');
+    choose('standard');
+    const url = new URL(navigate.mock.calls[0]![0] as string);
+    expect(url.pathname).toBe('/ee/en/review/');
+  });
+
+  it('bfcache restore of Plans frozen in Review → Plans, select works again', async () => {
+    const store = await setup('identified');
+    choose('standard');
+    act(() => {
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    });
+    expect(store.getState().state.name).toBe('Plans');
+    choose('basic');
+    expect(store.getState().state.name).toBe('Review');
+  });
+
   it('reviewStep off: identified select → Gate', async () => {
     const store = await setup('identified', false);
     choose('standard');
