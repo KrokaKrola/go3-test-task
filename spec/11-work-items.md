@@ -120,6 +120,8 @@ Tags: `slice` = build now. `post-slice` = spec only, see *Not in slice*.
   - `Review.test.tsx › pageshow persisted re-enables Pay and unchecks consent` (inv. 6)
   - `createOrder.test.ts › body = {planId, market (uppercase), returnUrl}` · `› no attempt marker written` (04 *Slice*) · `› 201 → redirect to paymentUrl` · `› 409 already_subscribed → Account` · `› 401 → StartingEid` · `› invalid_plan → Plans + notice=plan_unavailable` · `› 5xx → focused error banner`
   - `createOrder.test.ts › payment_started on 201` · `› open order saved with orderId, paymentUrl, plan, market, locale and price, tax, currency, trial snapshot`
+  - `reviewStep` off (Q32, Q76): `PlansPage.test.tsx › Gate → one POST with market → open order saved → payment redirect` · `› snapshot uses the card gross price when there is no trial` · `› POST fails → retry point banner; Try again → new POST` · `› Gate finds the open order paid → payment return page` · `npm run e2e:review-off` green (`review-off.spec.ts`)
+  - Handoff (Q77): `paymentHandoff.test.ts › boot script marks <html> for rungate=1` · `PlansPage.test.tsx › stays on the handoff screen … up to the payment redirect` · `› order fails → handoff ends, retry point shows` · `› no Gate intent → handoff ends at once` · `› bfcache restore from payment → Plans, handoff ends` · `review-off.spec.ts`: only "Opening payment…" on Plans while the order POST is held
 
 ### W-12 · Payment return + polling · `slice`
 - **Goal**: `/payment/return`, Polling per Q9, Confirmed, PaymentFailed (cancelled, declined), `requires_action`, Unconfirmed, IdentityLost, OrderNotFound.

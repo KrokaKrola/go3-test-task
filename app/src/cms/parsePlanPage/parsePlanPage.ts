@@ -18,6 +18,9 @@ export type PlanCardData = {
   bullets: string[];
   badge: string | null;
   priceText: string;
+  priceNet: number;
+  vatRate: number;
+  currency: string;
 };
 
 export type PlanPageData = {
@@ -145,6 +148,9 @@ function mergeCards(
       bullets: parseBullets(card, label, warnings),
       badge: optionalString(card, 'badge') || null,
       priceText: formatMoney(grossCents(plan.priceNet, plan.vatRate), plan.currency, locale),
+      priceNet: plan.priceNet,
+      vatRate: plan.vatRate,
+      currency: plan.currency,
     });
   }
   return merged;

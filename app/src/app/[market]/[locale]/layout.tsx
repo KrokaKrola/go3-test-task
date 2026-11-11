@@ -4,6 +4,7 @@ import { brandName } from '@/brand';
 import { DocumentShell } from '@/components/DocumentShell/DocumentShell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher/LanguageSwitcher';
 import { getConfig } from '@/config';
+import { HANDOFF_BOOT_SCRIPT } from '@/flow/paymentHandoff/paymentHandoff';
 import { enabledPairs } from '@/domain/markets/markets';
 import { getMessages } from '@/i18n/messages/messages';
 import { notFound } from 'next/navigation';
@@ -30,7 +31,8 @@ export default async function PairLayout({
   if (!pair) notFound();
   return (
     <DocumentShell lang={pair.locale}>
-      <header>
+      <script dangerouslySetInnerHTML={{ __html: HANDOFF_BOOT_SCRIPT }} />
+      <header data-handoff-hidden="">
         <LanguageSwitcher current={pair} pairs={pairs} messages={getMessages(pair.locale)} />
       </header>
       {children}

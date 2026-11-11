@@ -12,6 +12,9 @@ const card = (planKey: PlanCardData['planKey'], title: string): PlanCardData => 
   bullets: ['one'],
   badge: null,
   priceText: '11,15 €',
+  priceNet: 900,
+  vatRate: 0.24,
+  currency: 'EUR',
 });
 
 const renderCard = (

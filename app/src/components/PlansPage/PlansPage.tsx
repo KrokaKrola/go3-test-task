@@ -5,23 +5,37 @@ import {
   type PlansControllerProps,
 } from '@/components/PlansController/PlansController';
 import { isTrialPlan } from '@/domain/plans/plans';
+import stepStyles from '@/components/eid/StepScreen/StepScreen.module.css';
 import styles from './PlansPage.module.css';
 
-export type PlansText = PlanCardText & { faqHeading: string };
+export type PlansText = PlanCardText & { faqHeading: string; handoff: string };
 
 type Props = {
   page: PlanPageData;
   text: PlansText;
-  controller: Omit<PlansControllerProps, 'children' | 'planTitles'>;
+  controller: Omit<PlansControllerProps, 'children' | 'planTitles' | 'planPrices'>;
 };
 
 const planTitles = (page: PlanPageData) =>
   Object.fromEntries(page.cards.map((card) => [card.planId, card.title]));
 
+const planPrices = (page: PlanPageData) =>
+  Object.fromEntries(
+    page.cards.map(({ planId, priceNet, vatRate, currency }) => [
+      planId,
+      { id: planId, priceNet, vatRate, currency },
+    ]),
+  );
+
 export function PlansPage({ page, text, controller }: Props) {
   return (
-    <PlansController {...controller} planTitles={planTitles(page)}>
-      <main className={styles.page}>
+    <PlansController {...controller} planTitles={planTitles(page)} planPrices={planPrices(page)}>
+      {/* Shown only during the payment handoff (Q77); static so it paints before hydration. */}
+      <main data-handoff-screen="" hidden className={stepStyles.screen}>
+        <h1>{text.handoff}</h1>
+        <p role="status">{text.handoff}</p>
+      </main>
+      <main data-handoff-hidden="" className={styles.page}>
         <h1>{page.headline}</h1>
         {page.subhead && <p>{page.subhead}</p>}
         <div className={styles.cards}>

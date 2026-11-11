@@ -18,11 +18,17 @@ import { sessionStore } from '@/flow/browserStorage/browserStorage';
 import { resolveFlowParams } from '@/flow/context/context';
 import { RUN_GATE_PARAM, exitUrl } from '@/flow/exitUrl/exitUrl';
 import { runGateEffect, type GateDeps } from '@/flow/gate/gate';
-import type { FlowEffect, FlowEvent, RetryView } from '@/flow/machine/machine';
+import type { FlowEffect, FlowEvent, FlowState, RetryView } from '@/flow/machine/machine';
 import { navigate } from '@/flow/navigate/navigate';
 import { removeUrlParam } from '@/flow/notice/notice';
+import {
+  buildOrderSnapshot,
+  createOrderRunner,
+  type ReviewPlan,
+} from '@/flow/createOrder/createOrder';
 import { consumeRunGateToken } from '@/flow/runGateToken/runGateToken';
 import { openOrder } from '@/flow/openOrder/openOrder';
+import { endHandoff, isHandoffActive } from '@/flow/paymentHandoff/paymentHandoff';
 import { createFlowStore } from '@/flow/store/store';
 import { readUtm } from '@/flow/utm/utm';
 
@@ -37,9 +43,22 @@ export type PlansControllerProps = {
   retryMessages: RetryMessages;
   // API plan id → card title, for the retry point's "selected plan".
   planTitles: Record<string, string>;
+  // API plan id → build-time price; the order snapshot when reviewStep is off (07 `purchase`).
+  planPrices: Record<string, ReviewPlan>;
   store?: PlansFlowStore;
   children: ReactNode;
 };
+
+// Gate exits that leave Plans (reviewStep off); Review handles its own.
+const EXIT_STATES: readonly FlowState['name'][] = ['PaymentReturn', 'Confirmed', 'IdentityLost'];
+// The handoff screen stays up while the Gate runs or the page is about to leave (Q77).
+const HANDOFF_STATES: readonly FlowState['name'][] = [
+  'Entry',
+  'Gate',
+  'CreatingOrder',
+  'Account',
+  ...EXIT_STATES,
+];
 
 // Stored context beats the URL (inv. 2); the URL covers a return in another browser (Q7).
 function chosenPlanId(): string | null {
@@ -56,6 +75,7 @@ export function PlansController({
   eidMessages,
   retryMessages,
   planTitles,
+  planPrices,
   store: injectedStore,
   children,
 }: PlansControllerProps) {
@@ -83,6 +103,10 @@ export function PlansController({
   // Plans -> eID or Resume screens is a step change; Entry -> Plans is not.
   useFocusHeadingOnStepChange(eidActive || resumeActive ? state.name : 'plans');
   const [trialEligible, setTrialEligible] = useState<boolean | null>(null);
+  // Read by the order runner; Gate step 3 sets it right before CreatingOrder.
+  const trialEligibleRef = useRef(false);
+  // Build-time data: fixed for the page's life, so the effect needn't re-run on it.
+  const [prices] = useState(planPrices);
   // A click while Entry is still checking /v1/me waits for Plans (Q65).
   const heldPlanId = useRef<string | null>(null);
   // `rungate=1` (Q68): run the Gate on reaching Plans. Not a user select, so no plan_selected (07).
@@ -112,17 +136,37 @@ export function PlansController({
     const gateDeps: GateDeps = {
       getMe: async (signal) => {
         const me = await fetchMe(apiBase, signal);
-        if (!signal.aborted) setTrialEligible(me.trialEligible);
+        if (!signal.aborted) {
+          trialEligibleRef.current = me.trialEligible;
+          setTrialEligible(me.trialEligible);
+        }
         return me;
       },
       getOrder: (orderId, signal) => fetchOrder(apiBase, orderId, signal),
       clearOpenOrder: () => openOrder.clear(),
     };
+    const runOrder = createOrderRunner({
+      attempt: () => {
+        const { ctx } = store.getState().state;
+        const plan = ctx.planId ? prices[ctx.planId] : undefined;
+        if (!plan) throw new Error('unreachable: Plans only selects plans it shows');
+        return {
+          ctx,
+          utm: readUtm(new URLSearchParams(window.location.search)),
+          snapshot: buildOrderSnapshot(plan, trialEligibleRef.current),
+        };
+      },
+      origin: window.location.origin,
+      saveOpenOrder: (order) => openOrder.save(order),
+      navigate,
+    });
     const run = (effect: FlowEffect) => {
       if (effect.type === 'redirectToAccount') navigate(accountUrl);
-      runGateEffect(effect, dispatch, abort.signal, gateDeps);
+      if (runGateEffect(effect, dispatch, abort.signal, gateDeps)) return;
+      runOrder(effect, dispatch);
     };
 
+    let applyingGateIntent = false;
     const unsubscribe = store.subscribe((next, previous) => {
       if (next.state.name === 'Plans' && previous.state.name === 'Entry') {
         track('plan_viewed', { identified: next.state.ctx.identified });
@@ -131,7 +175,11 @@ export function PlansController({
         if (held) selectNow(held);
         const gateIntent = gateIntentPlanId.current;
         gateIntentPlanId.current = null;
-        if (gateIntent) selectNow(gateIntent, false);
+        if (gateIntent) {
+          applyingGateIntent = true;
+          selectNow(gateIntent, false);
+          applyingGateIntent = false;
+        }
       }
       // Identified select with reviewStep on: Review is its own route (04 Plans exits).
       if (next.state.name === 'Review' && previous.state.name === 'Plans') {
@@ -143,13 +191,31 @@ export function PlansController({
         );
         if (target) navigate(target);
       }
+      if (next.state !== previous.state && EXIT_STATES.includes(next.state.name)) {
+        const target = exitUrl(
+          next.state,
+          readUtm(new URLSearchParams(window.location.search)),
+          accountUrl,
+          window.location.origin,
+        );
+        if (target) navigate(target);
+      }
       if (next.effects !== previous.effects) next.effects.forEach(run);
+      // Nested dispatches pass through Plans on the way to the Gate: judge once they are done.
+      if (applyingGateIntent || !isHandoffActive()) return;
+      if (!HANDOFF_STATES.includes(store.getState().state.name)) endHandoff();
     });
-    // Back from /review/ restores Plans frozen in Review: show Plans again (inv. 6).
+    // Back from /review/ or from payment restores Plans frozen mid-flow: show Plans again (inv. 6).
     const onPageShow = (event: PageTransitionEvent) => {
       const { state: current } = store.getState();
-      if (event.persisted && current.name === 'Review')
+      if (!event.persisted) return;
+      if (current.name === 'Review')
         store.setState({ state: { name: 'Plans', ctx: current.ctx, view: {} }, effects: [] });
+      if (current.name === 'Gate' || current.name === 'CreatingOrder') {
+        const ctx = { ...current.ctx, openOrderId: openOrder.read()?.orderId ?? null };
+        store.setState({ state: { name: 'Plans', ctx, view: {} }, effects: [] });
+        endHandoff();
+      }
     };
     window.addEventListener('pageshow', onPageShow);
     dispatch({ type: 'begin' });
@@ -160,9 +226,11 @@ export function PlansController({
     const tokenValid = consumeRunGateToken(sessionStore, planKey);
     if (query.get(RUN_GATE_PARAM) === '1') {
       const planId = planIdFor(planKey ?? '');
-      if (!reviewStep && tokenValid && planId) gateIntentPlanId.current = planId;
+      // A plan with no card here (hidden, Q8) can't be ordered from Plans.
+      if (!reviewStep && tokenValid && planId && prices[planId]) gateIntentPlanId.current = planId;
       removeUrlParam(RUN_GATE_PARAM);
     }
+    if (!gateIntentPlanId.current) endHandoff();
     return () => {
       abort.abort();
       unsubscribe();
@@ -170,7 +238,7 @@ export function PlansController({
     };
     // selectNow only reads the store.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store, pair, reviewStep, accountUrl, apiBase]);
+  }, [store, pair, reviewStep, accountUrl, apiBase, prices]);
 
   const select = (planId: string) => {
     if (store.getState().state.name === 'Entry') heldPlanId.current = planId;
@@ -179,6 +247,8 @@ export function PlansController({
 
   const trialHidden = state.ctx.identified && trialEligible === false;
   const { dispatch: send } = store.getState();
+
+  const busy = state.name === 'Gate' || state.name === 'CreatingOrder';
 
   const screen = () => {
     if (eidActive)
@@ -198,21 +268,23 @@ export function PlansController({
       );
     return (
       <>
-        {(state.name === 'Plans' || state.name === 'Gate') && (
-          <RetryPoint
-            messages={retryMessages}
-            view={state.name === 'Plans' ? state.view : lastPlansView}
-            planTitle={state.ctx.planId ? (planTitles[state.ctx.planId] ?? null) : null}
-            canRetry={!reviewStep && Boolean(state.ctx.planId)}
-            busy={state.name === 'Gate'}
-            onTryAgain={() => {
-              syncOpenOrder(send);
-              send({ type: 'tryAgain' });
-            }}
-            onCheckAgain={() => send({ type: 'retryCheck' })}
-          />
-        )}
-        <LiveRegion text={state.name === 'Gate' ? retryMessages['retry.busy'] : ''} />
+        <div data-handoff-hidden="">
+          {(state.name === 'Plans' || busy) && (
+            <RetryPoint
+              messages={retryMessages}
+              view={state.name === 'Plans' ? state.view : lastPlansView}
+              planTitle={state.ctx.planId ? (planTitles[state.ctx.planId] ?? null) : null}
+              canRetry={!reviewStep && Boolean(state.ctx.planId && prices[state.ctx.planId])}
+              busy={busy}
+              onTryAgain={() => {
+                syncOpenOrder(send);
+                send({ type: 'tryAgain' });
+              }}
+              onCheckAgain={() => send({ type: 'retryCheck' })}
+            />
+          )}
+          <LiveRegion text={busy ? retryMessages['retry.busy'] : ''} />
+        </div>
         {children}
       </>
     );

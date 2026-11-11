@@ -2,3 +2,12 @@
   outline: 3px solid #0b5fff;
   outline-offset: 2px;
 }
+
+/* Payment handoff (Q77): set before first paint by an inline script, cleared by PlansController. */
+html[data-payment-handoff] [data-handoff-screen][hidden] {
+  display: block;
+}
+
+html[data-payment-handoff] [data-handoff-hidden] {
+  display: none;
+}

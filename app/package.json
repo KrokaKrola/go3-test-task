@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
+    "e2e:review-off": "NEXT_PUBLIC_FLAG_REVIEW_STEP=false playwright test review-off",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run lint && npm run typecheck && npm test && npm run format:check && npm run build"

@@ -78,6 +78,15 @@ The API notes say the eID provider sends the user back to `/auth/callback`. That
 
 The mock avoids the problem: its fake eID page runs on the API origin and sets the cookie itself. Working assumption: as in Q6, the mock behaviour is the contract, so after `?status=ok` the cookie is already there and the app only calls `GET /v1/me`. If Backend picks the code-exchange option, the callback needs one more API call. Q7's `state` parameter belongs in the same answer.
 
+### Note on Q23: plan freshness
+
+Plans and prices on the Plans page are a build-time snapshot of `GET /v1/plans`. Only a CMS publish triggers a rebuild. A change in the API alone (price, plan added or removed) does not. Until the next build:
+
+- **Plans page** shows the old prices and the old plan list. A new API plan has no card. The next build fails for it until the CMS adds one (06 *Card merge*, rule 4).
+- **Review** (`reviewStep` on) fetches `GET /v1/plans` again, so the stale snapshot never reaches payment: new price shown, removed plan → Plans + `notice=plan_unavailable`, fetch error → retry, Pay disabled (04 Review).
+- **No Review** (`reviewStep` off): the user only sees the plan card price, which can be stale. The server prices the order and returns no amount (Q4), so the payment provider's page is the first place the real amount appears. The GA `value` snapshot is the card price (07), so it can differ from the charge.
+- **Removed plan** at order creation: 400 `invalid_plan` → Plans + notice (05).
+
 ## Downstream: systems that depend on us
 
 | System | Owner | What it depends on from us | Contract / reference |

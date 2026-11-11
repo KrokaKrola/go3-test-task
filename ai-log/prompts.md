@@ -4201,3 +4201,35 @@ also save open questions to the deffered section into the plan
 Lets now create AI-log.md from the ai-log adn TEAM-NOTE. 
 
 For TEAM-NOTE.md i want you to go through 03-open-questions and PLAN.md defered items, and prioritize everything, from critical, to low. Also find any risks that matter the most from this list. I need top 5 from this list
+
+## 2026-11-11T18:00:24.842Z · session `cb441790`
+
+did you event verified that REVIEW_STEP with false is working? I setted this flag to false, and it just redirects me to the plan pages after payment page
+
+## 2026-11-11T18:02:09.108Z · session `cb441790`
+
+yes, this should be implemented, that a first priority thing as i did state in the scope and in the plan
+
+## 2026-11-11T18:17:26.840Z · session `cb441790`
+
+i've tested it, and after eid page i see plans page before redirection to payment. can it be fixed, so the transition is smooth, and without blinking ui elements from previous steps?
+
+## 2026-11-11T18:23:20.035Z · session `cb441790`
+
+if this tests fails so easily, it's fragile. i don't think we need to test such things at all.
+
+## 2026-11-11T18:24:41.177Z · session `cb441790`
+
+i think it's worth adding in the AI log about weak output issue with REVIEW_STEP flag
+
+## 2026-11-11T18:27:50.209Z · session `cb441790`
+
+check LV market flag as well, since it can be critical later
+
+## 2026-11-11T18:30:07.281Z · session `cb441790`
+
+for testing purpose copy lt cms response, check if everything will work for that locale with a flag and than delete it
+
+## 2026-11-11T18:32:04.836Z · session `cb441790`
+
+also update README.me and time spent and put it under extra, so i can pin point this issues during presentation and why i think they are extra. since we already passed 5 hours time limit

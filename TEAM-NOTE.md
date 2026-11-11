@@ -1,77 +1,58 @@
 # Team note: Nordlight subscribe flow
 
-**To:** Product lead, Backend lead · **From:** Frontend · 2026-11-11
+**To:** Product lead, Backend lead · **From:** Frontend · 11 Nov 2026
 
-The slice runs end to end against the mock: plan → eID → review → pay → confirmed. It also covers payment declined, slow payment, eID cancelled or expired, already subscribed, and `requires_action`. It is built on 75 working assumptions (`spec/03-open-questions.md`). Five of them can lose money, break consumer law or lose a paying customer, and only you can settle them.
+The subscribe flow works end to end against the mock API: pick a plan, identify with eID, review, pay, see the confirmation. The unhappy paths work too: a declined card, a slow payment, a cancelled or expired eID, a customer who already has a subscription, and the payment provider sending the customer to an extra check.
 
-## 1. Orders don't carry the market, so the wrong VAT can be charged (Q1, Q4): Critical · Backend
+Where the spec was silent we made 75 assumptions, listed in `spec/03-open-questions.md` (the Q numbers below point there). Most of them are frontend details we can own. Five could cost money, break consumer law or lose a paying customer, and we can't settle those on our side.
 
-`POST /v1/orders` takes only `planId`. Plan ids are shared across EE/LV/LT, but VAT is 24% in EE and 21% in LV/LT. The mock also accepts a plan in a market that doesn't sell it, so LV can order Premium. Order responses have no amount, currency or trial flag, so neither the user nor GA sees what was actually charged.
-**Recommendation:** accept `market` in the body (we already send it), and reject a plan the market doesn't sell with a 4xx. Return `amount`, `tax`, `currency` and `trial` on the order. Launch blocker.
+## How the flow works, briefly
 
-## 2. Double orders mean double charges (Q19, Q34, Q37, Q39): Critical · Backend
+The site is a set of static pages with no frontend server, so the customer's browser calls the API directly. During checkout the browser leaves our site twice, once for eID and once for payment, and each provider sends it back to a return page on our site. The payment result isn't known when the customer comes back, so we ask the API for the order status every few seconds, for up to 3 minutes.
 
-There is no idempotency. Each of these creates a second order, and both can be paid: a double tap, a retry after a timeout, a reload during the POST, or two tabs. The frontend narrows the window with a disabled button, an open order shared across tabs, and a check before every order. It can't close it: after a POST times out we can't know whether the order exists.
-**Recommendation:** support `Idempotency-Key` on `POST /v1/orders` and allow the header in CORS (the mock rejects it today). While the customer has an unpaid order, answer `409 pending_order_exists`. We already handle any 409 by re-checking (Q41).
+| # | Risk | Severity | Who decides |
+|---|---|---|---|
+| 1 | Wrong VAT can be charged | Critical | Backend |
+| 2 | One purchase can become two charges | Critical | Backend |
+| 3 | No legally required review before payment | Critical | Product + Legal |
+| 4 | Customer returns in another browser; eID return is unprotected | High | Backend + Security |
+| 5 | A paying customer may never hear from us | High | Product + Backend |
 
-## 3. Payment with no legal confirmation step (Q3, Q32, Q50, Q12): Critical · Product + Legal
+## 1. The order doesn't say which country it's for (Q1, Q4)
 
-In the brief, eID leads straight to payment. Trial eligibility and the final price are known only after eID. EU consumer law requires the price, the trial terms and an "order with obligation to pay" button right before payment. We built a Review step for this, behind the `reviewStep` flag (on), with an unchecked consent box. Its wording is a placeholder.
-**Recommendation:** make Review part of the product. Legal writes the consent text, the button label and the trial terms, including what a trial charges today (0 €, or a card check). Keep the flag's off arm as a kill switch only, and don't A/B test it until Legal says the off arm is lawful.
+A plan id like `plan_std_m` is the same in Estonia, Latvia and Lithuania, but VAT isn't: 24% in EE, 21% in LV and LT. `POST /v1/orders` takes only `planId`, so the backend has to guess the market. The mock also accepts a plan in a country that doesn't sell it, so a Latvian customer can order Premium. The order response has no amount, currency or trial flag, so neither the customer nor analytics can see what was charged.
 
-## 4. Returning in another browser, and an eID callback that isn't bound to a browser (Q7, Q33, Q6, Q40): High · Backend + Security
+**Our ask:** accept `market` in the order body (we already send it) and reject, with a 4xx, a plan that market doesn't sell. Return `amount`, `tax`, `currency` and `trial` on the order. We'd treat this as a launch blocker.
 
-70% of users are on phones. The eID app switch and in-app browsers (Instagram, Facebook) often return the user in a different browser, with no session cookie. The callback has no `state` param, so it can't be bound to the browser that started it (login CSRF). The provider return contracts (`?status=`, `?orderId=`, `cancelled=1`, `actionUrl`) and the CORS and cookie rules exist only in the mock.
-**Recommendation:**
-- Add a `state` param to eID start and the callback.
-- Publish the return params and the cookie attributes (`SameSite`, domain, lifetime; Q17) as the real contract.
-- Confirm that the API allows the `www` origin with credentials.
+## 2. One purchase can turn into two charges (Q19, Q34, Q37, Q39)
 
-On our side, plan, market, locale and UTMs travel in `returnUrl`, so a lost session costs one more eID, never a new order.
+The API will create a second order for the same purchase, and both can be paid. Everyday things cause it: a double tap on a slow phone, a retry after a timeout, a reload while the order is being created, two open tabs. We disable the button after one click, share the unpaid order across tabs and check for one before creating another. That makes duplicates rarer but can't stop them, because after a timeout the browser can't know whether the order was created.
 
-## 5. Paid customers with no confirmation (Q15, Q9): High · Product + Backend
+**Our ask:** support an `Idempotency-Key` header on `POST /v1/orders`, so the same key always returns the same order, and allow that header in CORS (the mock rejects it today). If the customer already has an unpaid order, answer `409 pending_order_exists`. We already handle any 409 by re-reading the order (Q41), so this needs no frontend work.
 
-Without a sign-up form we have no email. Payment confirmation is "usually seconds, occasionally minutes". After our 3-minute polling cap the user sees "we'll confirm shortly" and an order id, and nothing else: no receipt, no "your payment went through", and no way to reach them if the payment fails later. EU law also requires the contract to be confirmed on a durable medium.
-**Recommendation:** choose a contact channel before launch. Either collect an email on Review, or get one from the eID or payment provider. Backend: add a push or a "my orders" read, so a user who closed the tab can find the result.
+## 3. Nothing stands between eID and payment (Q3, Q32, Q50, Q12)
 
-## Everything else, ranked
+In the brief, eID leads straight to payment. EU consumer law says that right before paying, the customer must see the final price and the trial terms and press a button that clearly says they are ordering with an obligation to pay. We only know the final price and trial eligibility after eID, so this can't go on the plan page.
 
-Q = `spec/03`. "FE" = frontend items deferred in `PLAN.md`. FE items are ours and are listed so you can see the debt.
+We added a Review step between eID and payment: price, trial terms, an unchecked consent box and the pay button. It sits behind the `reviewStep` feature flag, which is on. We wrote the wording ourselves, as a placeholder.
 
-**High**
-- **Product:**
-  - Q2: CMS price "from 10,99 €" vs API 11,15 € (LV/LT Premium too). We show only the API price; the CMS and campaigns need fixing.
-  - Q5/Q53: no CMP is named. Until one is, GA events and UTM storage stay off.
-  - Q8/Q13/Q52: LV has 2 API plans vs 3 CMS cards, plus empty CMS fields. It stays behind `market.LV` (off).
-  - Q10: account URL for existing subscribers.
-- **Backend:**
-  - Q18/Q43/Q56: two error formats and no code catalogue.
-  - Q11/Q12: add `planKey` and `trialDays` to plans.
-  - Q51: per-market order metrics for alerts.
-  - Q49: runtime flag file and an error-tracker vendor.
-- **FE:**
-  - `actionUrl` isn't checked for https before the redirect.
-  - Clearing UTMs on consent withdrawal isn't built.
-  - No unit tests for `orderPoller` or `confirmOrder`.
-  - A bfcache restore on Polling resumes a stale poller.
-  - AI-translated et/lv/lt strings, consent included, need a native check.
+**Our ask:** keep Review as a permanent step. Legal writes the consent text, the button label and the trial terms, including what a trial charges today (0 €, or a small card check). Keep the flag only as an emergency off switch, and don't A/B test the flow without Review until Legal says that version is lawful.
 
-**Medium**
-- **Questions:**
-  - Q9 polling timings · Q17 session lifetime · Q23 prices at build time vs runtime · Q30/Q31 where the user lands after a cancel or decline · Q38/Q41 retry point without Review.
-  - Q14/Q55/Q63 URL and language rules · Q16 no "not you?" or logout.
-  - Q20/Q46/Q47 GA: `purchase` dedupe, gross vs net, provider referrals · Q75 `purchase` after a reload while consent is pending.
-  - Q21 WCAG 2.2 AA · Q22/Q54 performance budget (JS raised to 230 KB) · Q24/Q48 languages and who translates.
-  - Q35/Q42 429 without `Retry-After` · Q44/Q45 required CMS fields.
-- **FE:**
-  - Late order results are accepted with no `orderId` check.
-  - "Check again" sends two GETs on a double click and shows no busy state.
-  - The language switcher leaves the old locale in the stored context.
-  - `plan_viewed` is dropped after a bfcache restore.
-  - The 404 page has no `lang`.
-  - The Pay button shows no busy label, and focus isn't moved after a bfcache restore.
-  - One E2E clock assumption can make the test flaky.
+## 4. Customers come back in a different browser, and the eID return is unprotected (Q7, Q33, Q6, Q40)
 
-**Low**
-- **Questions:** Q25 `legalText` schema · Q26 `currency` field · Q27 promo and annual plans · Q28/Q29 mock quirks · Q36 unknown eID status · Q57–Q62 and Q64–Q74, frontend-internal assumptions (decided, listed for the record).
-- **FE:** split `Review.tsx` and `PaymentReturn.tsx`, remove the duplicated order schema, naming and test nits.
+70% of customers are on phones. There, eID often opens a separate app, and links from Instagram or Facebook open in the apps' own browsers. The customer often comes back in a different browser that doesn't have our session cookie. On top of that, the eID return has no `state` parameter, so we can't check that the browser coming back is the one that started. An attacker could use that to log a victim in as the attacker (login CSRF).
+
+The return parameters (`?status=`, `?orderId=`, `cancelled=1`, `actionUrl`) and the CORS and cookie rules exist only in the mock. We built against them and don't know whether production matches.
+
+The plan, market, language and UTM tags travel in the return URL, not only in browser storage. So a customer who loses the session repeats eID once, but keeps their plan and doesn't create a second order.
+
+**Our ask:**
+- Add a `state` parameter to eID start and check it on the callback.
+- Publish the return parameters and cookie settings (`SameSite`, domain, lifetime; Q17) as the real contract.
+- Confirm the API accepts cookie-carrying requests from the `www` origin.
+
+## 5. A paying customer may never hear from us (Q15, Q9)
+
+There's no sign-up form, so we don't have the customer's email. Payment confirmation is "usually seconds, occasionally minutes". If we still have no answer after 3 minutes, the customer sees "we'll confirm shortly" and an order number, and that's all. They get no receipt, and if the payment fails later we have no way to tell them. EU law also requires the contract to be confirmed on a durable medium, which in practice means something like an email.
+
+**Our ask:** product picks a contact channel before launch: ask for an email on Review, or get one from the eID or payment provider. Backend adds a "my orders" endpoint or a push, so a customer who closed the tab can still find out what happened.

@@ -46,6 +46,7 @@ export default async function PairPage({ params }: { params: Params }) {
         perMonth: messages['plans.perMonth'],
         trial: messages['plans.trial'],
         faqHeading: messages['plans.faqHeading'],
+        handoff: messages['review.opening'],
       }}
     />
   );

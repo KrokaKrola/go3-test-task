@@ -11,6 +11,7 @@ import { planIdFor } from '@/domain/plans/plans';
 import { openOrder } from '@/flow/openOrder/openOrder';
 import { sessionStore } from '@/flow/browserStorage/browserStorage';
 import { issueRunGateToken } from '@/flow/runGateToken/runGateToken';
+import { HANDOFF_ATTR, endHandoff, isHandoffActive } from '@/flow/paymentHandoff/paymentHandoff';
 import { getMessages } from '@/i18n/messages/messages';
 
 const {
@@ -18,18 +19,27 @@ const {
   fetchOrder,
   track,
   navigate,
+  createOrder,
+  trackThenRedirect,
 } = vi.hoisted(() => ({
   fetchMe: vi.fn(),
   fetchOrder: vi.fn(),
   track: vi.fn(),
   navigate: vi.fn(),
+  createOrder: vi.fn(),
+  trackThenRedirect: vi.fn((_event: string, _params: unknown, go: () => void) => go()),
 }));
+vi.mock('@/api/client/client', () => ({ createOrder }));
 vi.mock('@/api/me/me', () => ({ fetchMe: getMe }));
 vi.mock('@/api/order/order', () => ({ fetchOrder }));
 vi.mock('@/api/identity/identity', () => ({
   createIdentitySession: vi.fn(() => new Promise(() => {})),
 }));
-vi.mock('@/analytics/analytics/analytics', () => ({ track, setCommonSource: vi.fn() }));
+vi.mock('@/analytics/analytics/analytics', () => ({
+  track,
+  trackThenRedirect,
+  setCommonSource: vi.fn(),
+}));
 vi.mock('@/flow/navigate/navigate', () => ({ navigate }));
 
 import type { PlansFlowStore } from '@/components/PlansController/PlansController';
@@ -40,6 +50,7 @@ const text = {
   perMonth: '/ month',
   trial: '30-day free trial',
   faqHeading: 'FAQ',
+  handoff: 'Opening payment…',
 };
 const pair = { market: 'ee', locale: 'en' } as const;
 const controller = (reviewStep: boolean, store?: PlansFlowStore) => ({
@@ -57,11 +68,14 @@ const page: PlanPageData = {
   subhead: null,
   cards: (['basic', 'standard', 'premium'] as const).map((planKey) => ({
     planKey,
-    planId: `id_${planKey}`,
+    planId: planIdFor(planKey) ?? planKey,
     title: planKey,
     bullets: [],
     badge: null,
     priceText: price,
+    priceNet: 900,
+    vatRate: 0.24,
+    currency: 'EUR',
   })),
   legalText: ['Legal'],
   faq: [],
@@ -105,6 +119,8 @@ const choose = (title: string) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  createOrder.mockReturnValue(new Promise(() => {}));
+  endHandoff();
   window.localStorage.clear();
   window.sessionStorage.clear();
   window.history.replaceState(null, '', '/');
@@ -201,8 +217,8 @@ describe('PlansPage', () => {
     expect(store.getState().state.name).toBe('Plans');
     choose('premium');
     expect(track.mock.calls.filter(([name]) => name === 'plan_selected')).toEqual([
-      ['plan_selected', { plan_id: 'id_basic' }],
-      ['plan_selected', { plan_id: 'id_premium' }],
+      ['plan_selected', { plan_id: 'plan_basic_m' }],
+      ['plan_selected', { plan_id: 'plan_prem_m' }],
     ]);
   });
 
@@ -214,7 +230,7 @@ describe('PlansPage', () => {
       choose('basic');
       choose('standard');
     });
-    expect(store.getState().state.ctx.planId).toBe('id_basic');
+    expect(store.getState().state.ctx.planId).toBe('plan_basic_m');
     expect(track.mock.calls.filter(([name]) => name === 'plan_selected')).toHaveLength(1);
   });
 
@@ -264,7 +280,7 @@ describe('PlansPage', () => {
     it('reviewStep off: retry point shows the chosen plan preselected + banner; Try again → Gate', async () => {
       window.history.replaceState(null, '', '/ee/en/?plan=standard&notice=payment_declined');
       getMe.mockResolvedValue({ customerId: 'c', trialEligible: false, activeSubscription: null });
-      const store = createFlowStore({ ...ctx(false), planId: 'id_standard', identified: true });
+      const store = createFlowStore({ ...ctx(false), planId: 'plan_std_m', identified: true });
       render(<PlansPage page={page} text={text} controller={controller(false, store)} />);
       await act(async () => {});
       const banner = screen.getByRole('alert');
@@ -284,7 +300,7 @@ describe('PlansPage', () => {
         trialEligible: false,
         activeSubscription: null,
       });
-      const store = createFlowStore({ ...ctx(false), planId: 'id_standard', identified: true });
+      const store = createFlowStore({ ...ctx(false), planId: 'plan_std_m', identified: true });
       render(<PlansPage page={page} text={text} controller={controller(false, store)} />);
       await act(async () => {});
       getMe.mockReturnValue(new Promise(() => {}));
@@ -312,7 +328,7 @@ describe('PlansPage', () => {
         trialEligible: false,
         activeSubscription: null,
       });
-      const store = createFlowStore({ ...ctx(false), planId: 'id_standard', identified: true });
+      const store = createFlowStore({ ...ctx(false), planId: 'plan_std_m', identified: true });
       render(<PlansPage page={page} text={text} controller={controller(false, store)} />);
       await act(async () => {});
       const banner = screen.getByRole('alert');
@@ -321,7 +337,7 @@ describe('PlansPage', () => {
         openOrder.save({
           orderId: 'o1',
           paymentUrl: 'http://pay.test/o1',
-          planId: 'id_standard',
+          planId: 'plan_std_m',
           market: 'ee',
           locale: 'en',
           snapshot: { value: 1, tax: 0, currency: 'EUR', trial: 'false' },
@@ -358,13 +374,13 @@ describe('PlansPage', () => {
       window.history.replaceState(null, '', '/ee/en/?notice=payment_declined');
       getMe.mockResolvedValue({ customerId: 'c', trialEligible: false, activeSubscription: null });
       fetchOrder.mockResolvedValue({ status: 'pending' });
-      const store = createFlowStore({ ...ctx(false), planId: 'id_standard', identified: true });
+      const store = createFlowStore({ ...ctx(false), planId: 'plan_std_m', identified: true });
       render(<PlansPage page={page} text={text} controller={controller(false, store)} />);
       await act(async () => {});
       openOrder.save({
         orderId: 'o1',
         paymentUrl: 'http://pay.test/o1',
-        planId: 'id_standard',
+        planId: 'plan_std_m',
         market: 'ee',
         locale: 'en',
         snapshot: { value: 1, tax: 0, currency: 'EUR', trial: 'false' },
@@ -392,6 +408,130 @@ describe('PlansPage', () => {
       expect(store.getState().state.name).toBe('CreatingOrder');
       expect(track).not.toHaveBeenCalledWith('plan_selected', expect.anything());
       expect(window.location.search).toBe('?plan=standard');
+    });
+
+    it('reviewStep off (Q32): Gate → one POST with market → open order saved → payment redirect', async () => {
+      createOrder.mockResolvedValue({ orderId: 'ord_1', paymentUrl: 'http://pay.test/ord_1' });
+      issueRunGateToken(sessionStore, 'standard');
+      window.history.replaceState(null, '', '/ee/en/?plan=standard&rungate=1&utm_source=x');
+      await setup('eligible', false);
+      await act(async () => {});
+      expect(createOrder).toHaveBeenCalledTimes(1);
+      const [body] = createOrder.mock.lastCall ?? [];
+      expect(body).toMatchObject({ planId: 'plan_std_m', market: 'ee' });
+      const returnUrl = new URL(body.returnUrl);
+      expect(returnUrl.pathname).toBe('/payment/return');
+      expect(returnUrl.searchParams.get('market')).toBe('ee');
+      expect(returnUrl.searchParams.get('utm_source')).toBe('x');
+      // Plan card price + trial (07 `purchase` snapshot).
+      expect(openOrder.read()).toMatchObject({
+        orderId: 'ord_1',
+        planId: 'plan_std_m',
+        snapshot: { value: 0, tax: 0, currency: 'EUR', trial: 'true' },
+      });
+      expect(trackThenRedirect).toHaveBeenCalledWith(
+        'payment_started',
+        { plan_id: 'plan_std_m', transaction_id: 'ord_1' },
+        expect.any(Function),
+      );
+      expect(navigate).toHaveBeenLastCalledWith('http://pay.test/ord_1');
+    });
+
+    describe('payment handoff (Q77)', () => {
+      // What the inline boot script does for `rungate=1`.
+      const visitAfterCallback = (planKey = 'standard', token: string | null = planKey) => {
+        if (token) issueRunGateToken(sessionStore, token);
+        window.history.replaceState(null, '', `/ee/en/?plan=${planKey}&rungate=1`);
+        document.documentElement.setAttribute(HANDOFF_ATTR, '');
+      };
+
+      it('stays on the handoff screen through Gate and order up to the payment redirect', async () => {
+        createOrder.mockResolvedValue({ orderId: 'ord_1', paymentUrl: 'http://pay.test/ord_1' });
+        visitAfterCallback();
+        await setup('identified', false);
+        await act(async () => {});
+        expect(navigate).toHaveBeenLastCalledWith('http://pay.test/ord_1');
+        expect(isHandoffActive()).toBe(true);
+      });
+
+      it('order fails → handoff ends, retry point shows', async () => {
+        createOrder.mockRejectedValueOnce(apiError('server', 500));
+        visitAfterCallback();
+        await setup('identified', false);
+        await act(async () => {});
+        expect(isHandoffActive()).toBe(false);
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+      });
+
+      it('no Gate intent (crafted link) → handoff ends at once', async () => {
+        visitAfterCallback('standard', null);
+        await setup('identified', false);
+        expect(isHandoffActive()).toBe(false);
+      });
+
+      it('bfcache restore from payment → Plans, handoff ends (inv. 6)', async () => {
+        createOrder.mockResolvedValue({ orderId: 'ord_1', paymentUrl: 'http://pay.test/ord_1' });
+        visitAfterCallback();
+        const store = await setup('identified', false);
+        await act(async () => {});
+        act(() => {
+          window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+        });
+        expect(store.getState().state).toMatchObject({
+          name: 'Plans',
+          ctx: { openOrderId: 'ord_1' },
+        });
+        expect(isHandoffActive()).toBe(false);
+      });
+    });
+
+    it('reviewStep off: snapshot uses the card gross price when there is no trial', async () => {
+      createOrder.mockResolvedValue({ orderId: 'ord_2', paymentUrl: 'http://pay.test/ord_2' });
+      await setup('identified', false);
+      choose('basic');
+      await act(async () => {});
+      expect(openOrder.read()?.snapshot).toEqual({
+        value: 11.16,
+        tax: 2.16,
+        currency: 'EUR',
+        trial: 'false',
+      });
+      expect(navigate).toHaveBeenLastCalledWith('http://pay.test/ord_2');
+    });
+
+    it('reviewStep off: POST fails → retry point banner; Try again → new POST', async () => {
+      createOrder.mockRejectedValueOnce(apiError('server', 500));
+      const store = await setup('identified', false);
+      choose('standard');
+      await act(async () => {});
+      expect(store.getState().state).toMatchObject({
+        name: 'Plans',
+        view: { errorKind: 'server' },
+      });
+      createOrder.mockResolvedValueOnce({ orderId: 'ord_3', paymentUrl: 'http://pay.test/ord_3' });
+      fireEvent.click(screen.getByRole('button', { name: en['retry.action.tryAgain'] }));
+      await act(async () => {});
+      expect(createOrder).toHaveBeenCalledTimes(2);
+      expect(navigate).toHaveBeenLastCalledWith('http://pay.test/ord_3');
+    });
+
+    it('reviewStep off: Gate finds the open order paid → payment return page', async () => {
+      openOrder.save({
+        orderId: 'ord_9',
+        paymentUrl: 'http://pay.test/ord_9',
+        planId: 'plan_std_m',
+        market: 'ee',
+        locale: 'en',
+        snapshot: { value: 0, tax: 0, currency: 'EUR', trial: 'true' },
+      });
+      fetchOrder.mockResolvedValue({ status: 'paid', actionUrl: null });
+      await setup('identified', false);
+      choose('standard');
+      await act(async () => {});
+      expect(createOrder).not.toHaveBeenCalled();
+      const target = new URL(String(navigate.mock.calls.at(-1)?.[0]));
+      expect(target.pathname).toBe('/payment/return/');
+      expect(target.searchParams.get('orderId')).toBe('ord_9');
     });
 
     it.each([

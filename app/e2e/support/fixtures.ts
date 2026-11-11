@@ -86,8 +86,13 @@ async function clickAndFollowRedirect(
   await page.waitForURL(`**${urlPart}**`, { waitUntil: 'commit' });
 }
 
-// Plans → eID provider (click) → callback → Review.
-export async function chooseAndVerify(page: Page, flow: Flow, planName: string) {
+// Plans → eID provider (click) → callback → Review, or payment when reviewStep is off.
+export async function chooseAndVerify(
+  page: Page,
+  flow: Flow,
+  planName: string,
+  landing = '/ee/en/review/',
+) {
   await clickAndFollowRedirect(
     page,
     () => page.getByRole('button', { name: `Choose ${planName}` }).click(),
@@ -105,13 +110,13 @@ export async function chooseAndVerify(page: Page, flow: Flow, planName: string) 
   await page.waitForURL('**/auth/callback/**', { waitUntil: 'commit' });
   await flow.checkScreen();
   release();
-  // Callback → Verifying → redirect to Review, all on the app clock.
+  // Callback → Verifying → redirect onwards, all on the app clock.
   await expect
     .poll(async () => {
-      if (!page.url().includes('/review/')) await page.clock.runFor(500);
+      if (!page.url().includes(landing)) await page.clock.runFor(500);
       return page.url();
     })
-    .toContain('/ee/en/review/');
+    .toContain(landing);
 }
 
 export async function payFromReview(page: Page) {
