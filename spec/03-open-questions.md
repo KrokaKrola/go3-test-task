@@ -1,0 +1,84 @@
+# Open questions and assumptions
+
+Status: `sent` = asked via recruiter, awaiting answer. `open` = not asked, working assumption applies. Each assumption is what we build until answered.
+
+Sources: Brief = `docs/01-product-brief.md`, API = `docs/02-api-notes.md`, CMS = `docs/03-cms-content-model.md`, GA = `docs/04-analytics-notes.md`, Mock = `mock-server/`.
+
+## Sent to recruiter (2026-11-10)
+
+| ID | Question | Owner | Working assumption | Status |
+|---|---|---|---|---|
+| Q1 | `POST /v1/orders` takes only `planId`; ids are shared across EE/LV/LT but VAT differs (EE 24%, LV/LT 21%). How does the backend know the market: session or frontend? | Backend | Frontend sends `market` in order body. **Launch blocker.** Mock ignores extra fields; it also accepts any plan id in any market (LV can order `plan_prem_m`). | sent |
+| Q2 | CMS `priceLabel` vs API price. EE Standard: CMS "from 10,99 €", API 899×1.24 = 11,15 €. Also LT and LV Premium: CMS 14,99 €, API 1299×1.21 = 15,72 €. Which is the source of truth? | Product + Marketing | API is the only price source. `priceLabel` not rendered. Price = `round(priceNet × (1 + vatRate))` cents, half-up, formatted per locale. "from" dropped (flat monthly price). | sent (LT/LV Premium not mentioned in the question) |
+| Q3 | Trial eligibility and final price only known after eID. EU consumer law needs explicit consent and an "order with obligation to pay" button before payment. Can we add a Review step between eID and payment? | Product + Legal | Review step built behind feature flag `reviewStep` (default on). Review has an unchecked consent checkbox and a Pay button labelled "Order with obligation to pay". Legal writes the wording (04 *Review consent*). | sent |
+
+## P0: blocks money, legal or build
+
+| ID | Question | Owner | Working assumption |
+|---|---|---|---|
+| Q4 | Neither `POST` nor `GET /v1/orders/{id}` returns amount, currency or trial flag. What do we put in the GA `purchase` `value`/`currency`? What is charged on a trial order (0 €, card verification, first month)? | Backend + Product | `value` computed client-side from plan price; `0` when trial. `currency` from plans API. Trial order = card capture, 0 € charged now. |
+| Q5 | No consent mechanism (CMP) named. GA4 and UTM storage need prior consent in the EU. Which CMP, and what happens before consent? | Marketing + Legal | GTM Consent Mode v2. No GA events and no UTM persistence before analytics consent. UTMs kept in memory/URL only until consent. Events before the decision are lost on redirect (funnel top undercounted). On withdrawal the `purchase` dedupe keys (orderId only) are kept. Both for Legal to confirm. |
+| Q6 | Provider return contracts are only in the mock README, not the API notes: `returnUrl` in request bodies, eID `?status=ok\|cancelled\|expired`, payment `?orderId`, `&cancelled=1`, `actionUrl` on `requires_action`. Are these the real contracts? Can cancel be told apart from decline (mock marks cancel as `failed`)? | Backend | Mock behaviour is the contract. Cancel detected via `cancelled=1` only. |
+| Q7 | Mobile eID app switch or in-app browsers (Instagram/Facebook) can return the user in a different browser: no cookie, no plan, no UTM. Also the callback has no `state` param, so it can't be bound to the originating browser (login CSRF). | Backend + Security | Plan, market, locale and UTM encoded in `returnUrl` query. If no session on return: show "continue in this browser" with restart. Request a `state` param from backend. |
+| Q40 | App on `www.nordlight.example`, API on `api.nordlight.example`: cross-origin. Docs don't mention CORS or the session cookie's `SameSite`/domain. | Backend + Platform | API allows the `www` origin with credentials. Cookie is host-only on `api`, `SameSite=Lax` (same site as `www`, so sent on fetch), like the mock. |
+| Q8 | LV: API returns 2 plans (no Premium), CMS has 3 cards, brief says 3. Which is right? | Product | API decides which plans exist. CMS cards without a matching API plan are hidden. |
+| Q50 | Review experiment (10): is a random A/B bucket id in `localStorage` strictly necessary or consent-bound? Is the off arm (no Review, Q32) legal at all? | Legal | Consent-bound: bucketed only after analytics consent, else arm on. Off arm only after Legal sign-off. |
+| Q53 | With analytics in the slice there is still no CMP (Q5), neither in the mock nor in the docs. Where does the app read the consent decision, and how do tests set it? | Marketing + Legal | One `consent.ts` adapter is the only reader; `analytics.ts` and UTM storage ask it. Prod: GTM Consent Mode `analytics_storage` as set by the CMP `update`. Slice: no CMP and no banner, so the adapter returns `pending` (07 *Consent*, "Before a decision"): GTM loads with Consent Mode default `denied`, events queue in memory and are never pushed, UTMs travel in memory and `returnUrl` only, nothing analytics-related is stored. The full logic (queue, flush on `granted`, drop on `denied`, storage, `purchase` guard) is built and unit-tested by driving the adapter. E2E runs on `pending`. No consent banner of our own. |
+
+## P1: flow correctness
+
+| ID | Question | Owner | Working assumption |
+|---|---|---|---|
+| Q9 | Payment confirmation is "usually seconds, occasionally minutes". Polling interval, max wait, any push channel? What does the user see after N seconds? | Backend + Product | Poll `GET /v1/orders/{id}` every 2 s for 20 s, then every 5 s up to 3 min. After 20 s show "still confirming" message; after 3 min show "we'll confirm shortly" with safe exit. |
+| Q10 | "Existing subscribers go to their account": only known via `/v1/me` (cookie is HttpOnly on the API domain) or after eID. Where is the account? Is a client-side redirect from the static page acceptable? | Product + Backend | Call `/v1/me` with credentials on load; on active subscription redirect to `ACCOUNT_URL` (config). After eID, same check; `409 already_subscribed` on order handled the same way. |
+| Q11 | CMS `planKey` (`basic`/`standard`/`premium`) vs API `id` (`plan_basic_m`/…): mapping is undocumented. | Backend + CMS | Static map in frontend config. Request a `planKey` field on the API plan. |
+| Q12 | Brief: trial on Standard and Premium only. API plans have no trial field; CMS cards don't show trial. | Backend + Product | Hardcoded trial plan set `{standard, premium}`, 30 days. Request `trialDays` on plan. Plan cards show a conditional trial line from our catalog. Review and Confirmed show the definitive note (04 *Trial*). |
+| Q13 | LV CMS entries partly empty (LV.en: Premium empty, `legalText` and FAQ empty; LV.lv: Standard bullets empty, Premium title empty, legal and FAQ empty). No empty-field rule, no fallback language, no publish validation. What do LV visitors see before launch? | Marketing + Product | LV behind feature flag `market.LV` (off). Build fails if `legalText` empty for an enabled market. Empty optional fields hidden. No cross-language fallback. |
+| Q14 | No URL rule for market and locale; no language selector mentioned. How is the market chosen (path, domain, geo-IP)? | Product + SEO | URL `/{market}/{locale}/` e.g. `/ee/et/`. Language switcher within market. Root redirects by `Accept-Language`, default `ee/et`. Static export: done client-side with `navigator.languages` (08). |
+| Q15 | No sign-up means no email: no receipt, no "payment confirmed" message, no recovery contact. `/v1/me` has no name. | Product + Backend | Out of scope for the slice; confirmation page shows order id. Flagged as a launch risk. |
+| Q16 | No logout or "not you?". What if the eID country differs from the site market? | Product + Backend | No logout in the flow. Market from URL, eID country ignored. Flagged. |
+| Q17 | API notes say "sessions expire after 5 minutes", which is ambiguous. Mock: eID session 5 min, auth cookie 1 h. Auth session lifetime is undocumented. | Backend | eID session 5 min, auth session ≥ 1 h. `?status=expired` and `401` lead to restart from eID. |
+| Q18 | Two error formats (`{error}` vs `{errors[]}`) and no error-code catalogue. Mock codes: `unauthenticated`, `invalid_plan`, `invalid_request`, `already_subscribed`, `order_not_found`, `internal_error`. `Retry-After` on 429 is mock-only. | Backend | One adapter normalises both shapes to `{status, code, message}`. Mock codes are treated as the catalogue. Honour `Retry-After`. |
+| Q19 | No idempotency on `POST /v1/orders`: double tap = two orders. Retry after decline: new order or reuse? | Backend | Button disabled while in flight. New order per payment attempt. Request `Idempotency-Key` support. |
+| Q30 | User comes back to Review with a stored order that hasn't settled (Back from the payment page, reload). New order or reuse? | Product + Backend | Check the order status first. `pending`/`requires_action` → "Continue payment" reusing `paymentUrl`. `paid` → Confirmed. `failed` → normal Review. |
+| Q31 | Where does the user land after a payment cancel or decline? | Product | Review with a banner on the same plan. "Try again" creates a new order. "Change plan" goes to Plans. Cancel = server `failed` + `cancelled=1`. |
+| Q32 | With `reviewStep` off, what happens after eID? | Product + Legal | Create the order straight after verification and redirect to payment. Price and trial are shown on the plan card. Legal risk, see Q3. |
+| Q33 | Payment return with no session (another browser, or the session expired): the order status can't be read. | Backend + Security | Show the order id and "verify to see status". eID returnUrl carries the orderId, then polling resumes. Never a new order. |
+| Q34 | `POST /v1/orders` network error or timeout: was the order created? | Backend | Unknown without idempotency. No automatic retry. The user can retry, which risks a duplicate until `Idempotency-Key` exists (Q19). |
+| Q35 | 429 with no `Retry-After` header (the header is mock-only, Q18). | Backend | Fallback 30 s countdown. |
+| Q36 | eID callback with a missing or unknown `status`. | Backend | Treated as `expired`: message plus restart. |
+| Q37 | The API has no "list my orders" endpoint and no "one pending order per customer" rule. Two tabs can each create an order and both can be paid. | Backend | Open order kept in storage shared across tabs (functional, not analytics, so no consent needed). The Gate checks it before every order. Request: `POST /v1/orders` answers 409 while the customer has a pending order. |
+| Q38 | With `reviewStep` off there's no Review to land on after an error or a failed payment. | Product | Retry point = Plans with the chosen plan preselected, a banner and "Try again". |
+| Q39 | Reload during `POST /v1/orders` loses the response, so the order exists but is unknown to us. | Backend | Attempt marker before the POST. On reload: "last attempt didn't finish", one more click needed. The orphan order has no known `paymentUrl` and stays unpaid. The mock's CORS rejects an `Idempotency-Key` header, so this is a backend request (Q19). |
+| Q51 | Experiment readout and alerts need backend data the API doesn't expose. | Backend | Frontend sends the Review arm in the `POST /v1/orders` body like `market` (Q1). Backend stores it and exposes per-market metrics: created/paid/failed, pending age, identity 429/5xx, orders per customer, paid by arm (05 requests 15, 16). |
+
+| Q41 | `POST /v1/orders` 409 with a code other than `already_subscribed` (e.g. a future "pending order exists", Q37). | Backend | Run the Gate once more: an open order → Resume, an active subscription → Account. If the Gate reaches CreatingOrder again: retry point + error, no second POST. |
+| Q42 | 429 from endpoints other than identity (`/v1/me`, orders). Not documented, not in the mock. | Backend | Treated as 5xx for that state. `Retry-After` ignored there. |
+| Q43 | Docs don't define the `activeSubscription` shape, its "none" value, the `plans` wrapper, the order `status` field name, or success status codes. | Backend | Mock shapes: `activeSubscription` `null` when none, `{market, plans[]}`, `status` field, any 2xx = success. |
+| Q44 | Docs don't say which PlanPage fields are required or how cards are ordered. | CMS + Marketing | Required: `headline`, `legalText`, `title` on a rendered card; empty → build fails for an enabled market. Others optional, hidden when empty. Card order = CMS order. |
+| Q45 | An API plan with no CMS card has no title or bullets. | CMS + Product | Build fails for an enabled market. |
+
+## P2: quality and non-functional
+
+| ID | Question | Owner | Working assumption |
+|---|---|---|---|
+| Q20 | Analytics: no dedupe rule for `purchase` (reload, repeated polling), no params for other events, no UTM storage spec. | Marketing | `purchase` fires once per `orderId` (localStorage guard, shared across tabs, written only after consent; see 07). All events carry `market`, `locale`, `review_step`, UTMs; `plan_id` where known. UTMs carried with the flow (see Q5, Q7). |
+| Q21 | No accessibility requirement. Provider pages are outside our control. | Product | WCAG 2.2 AA for our pages. European Accessibility Act applies (EN 301 549 = WCAG 2.1 AA, included in 2.2 AA). |
+| Q22 | "Under two minutes" and "70% on phones" have no metric or performance budget. | Product | Measure `plan_viewed` → `purchase` time. LCP < 2.5 s, INP < 200 ms (lab: TBT < 200 ms), CLS < 0.1 on mid-range mobile. JS ≤ 150 KB gzip on the plan page. |
+| Q23 | Static CDN build vs prices: are prices baked in at build or fetched at runtime? | Backend + Platform | Plans fetched at build for first paint, re-fetched at runtime before Review. Review price is binding. |
+| Q24 | Brief: 4 languages. Fixtures: local + `en` per market only. Is every language available in every market? Russian? | Product + Marketing | Local + `en` per market, as in the fixtures. |
+| Q25 | `legalText` rich-text schema undocumented (fixtures use `[{type, text}]`). | CMS | Only `paragraph` supported; unknown node types are skipped and logged. |
+| Q46 | GA `purchase.value`: gross (incl. VAT) or net? VAT differs by market (EE 24%, LV/LT 21%), so gross values aren't comparable. | Marketing | `value` = gross price shown, `tax` = VAT part, so net = `value − tax`. `0` on trial. |
+| Q47 | Return from eID and payment providers counts as a GA4 referral and can steal campaign attribution. Which provider domains? | Marketing + Backend | Marketing adds eID and payment domains to GA4 "unwanted referrals". `returnUrl` also carries `utm_*`. |
+| Q48 | Our own strings (everything outside the CMS plan page) need 4 languages. Who writes and approves them? And English formatting: `en` alone gives US style ("December 10, 2026", "€11.15"). | Marketing + Product | We write `en`, other catalogs translated before launch. `en` formats as `en-150` ("10 December 2026"). |
+| Q49 | Prod needs runtime flags (static export: no rebuild per flip) and client error tracking for alerts (10). No vendor named. | Platform + Frontend | A JSON file at `CONFIG_URL` on the CDN, short cache. Error tracker vendor TBD (new dependency). |
+| Q52 | LV rolled back after launch (`market.LV` off): what do LV users returning from eID or payment see? | Product | Callbacks render in `lv`. Retry points and Plans replaced by "not available right now" + order status; no retry, no redirect to another market (10). |
+
+## P3: low
+
+| ID | Question | Owner | Working assumption |
+|---|---|---|---|
+| Q26 | `currency` returned by the mock but not in the API notes. | Backend | Field exists; always `EUR`. |
+| Q27 | Promo codes and gift subscriptions coming later; order body is `planId` only. `_m` suffix hints at annual plans. | Product + Backend | Order payload built by one function so fields can be added. No promo UI. |
+| Q28 | The mock uses the `{error}` format on plans, `/v1/me` and CMS too, not only identity. | Backend | Covered by the adapter in Q18. |
+| Q29 | Mock `api_500` doesn't affect `GET /v1/plans`, which implies plans are fetched at build. | Backend | See Q23. |
