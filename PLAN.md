@@ -158,4 +158,17 @@ Each step is one work item from `spec/11-work-items.md`, done in one AI session.
   - `Polling.test.tsx` "Back to plans" checks only that a navigation happened, not where it went.
 - i18n: the et/lv/lt `payment.*` strings are AI translations and need a native check.
 
+### Deferred from W-13 review (check later)
+
+- Flaky risk: `fixtures.ts` does one `evaluate` + `runFor(500)` after the response that schedules a redirect. This assumes the app's `setTimeout` is already scheduled. If it isn't, the paused clock never fires it and `waitForURL` hangs under load. At least comment the assumption.
+- Design: the Review title is set twice, by `review/page.tsx` `generateMetadata` and by the `Review.tsx` effect. Keep one. `generateMetadata` ignores `reviewStep`, so with the flag off the 404 likely gets the Review title. Share a `findReviewPair` that checks the flag. Not unit-tested.
+- `spec/09-testing.md:71` says axe runs "after `<h1>` has focus". Per 08:73, focus moves only on a client-side step change, so update 09.
+- `spec/09` E2E setup: add the route-hold technique (hold the request that ends a transient screen, run axe, release).
+- Nits:
+  - Use the `Locator` type, not `ReturnType<Page['getByText']>` (fixtures.ts ~112).
+  - The `heading` export repeats the h1 locator from `checkScreen`.
+  - The specs hardcode English app strings; import the `en` catalog.
+  - The `page.route` holds in `chooseAndVerify` and `payAndCheckPolling` are never `unroute`d.
+  - The Plans title is bare "Nordlight" (2.4.2: not descriptive).
+
 Record every cut in README "What I cut".
