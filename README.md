@@ -94,6 +94,7 @@ Counted from the timestamps in `ai-log/`.
 
 ### Notes
 
+| Stage | Result |
 | --- | --- |
 | Over budget | About 1:40 over, all from the slice (3:44 against 1:30). Every work item went through a worker → reviewer → fix loop (`AI-LOG.md`) |
 | Spec | Under budget |
