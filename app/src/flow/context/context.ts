@@ -1,10 +1,10 @@
-import type { Locale } from '../../domain/locale/locale';
-import { ALL_PAIRS, resolvePair } from '../../domain/markets/markets';
-import type { Market } from '../../domain/markets/markets';
-import { planIdFor } from '../../domain/plans/plans';
-import type { PlanKey } from '../../domain/plans/plans';
-import { UTM_KEYS, loadUtm, readUtm, resolveUtm } from '../utm/utm';
-import type { UtmSet } from '../utm/utm';
+import type { Locale } from '@/domain/locale/locale';
+import { ALL_PAIRS, resolvePair } from '@/domain/markets/markets';
+import type { Market } from '@/domain/markets/markets';
+import { planIdFor } from '@/domain/plans/plans';
+import type { PlanKey } from '@/domain/plans/plans';
+import { UTM_KEYS, loadUtm, readUtm, resolveUtm } from '@/flow/utm/utm';
+import type { UtmSet } from '@/flow/utm/utm';
 
 export type ReturnPath = '/auth/callback' | '/payment/return';
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { initialState, reduce } from '../machine/machine';
-import type { FlowContext, FlowEffect, FlowEvent, FlowState } from '../machine/machine';
+import { initialState, reduce } from '@/flow/machine/machine';
+import type { FlowContext, FlowEffect, FlowEvent, FlowState } from '@/flow/machine/machine';
 
 export type FlowStore = {
   state: FlowState;

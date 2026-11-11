@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setConsent } from '../consent/consent';
+import { setConsent } from '@/analytics/consent/consent';
 import { resetAnalytics, setCommonSource, track, trackThenRedirect } from './analytics';
 import type { EventMap, EventName } from './analytics';
 

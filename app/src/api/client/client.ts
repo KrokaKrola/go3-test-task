@@ -1,20 +1,20 @@
 import type { z } from 'zod';
-import { getConfig } from '../../config';
-import type { Market } from '../../domain/markets/markets';
+import { getConfig } from '@/config';
+import type { Market } from '@/domain/markets/markets';
 import {
   abortedError,
   invalidResponseError,
   networkError,
   toApiError,
   type Endpoint,
-} from '../errors/errors';
+} from '@/api/errors/errors';
 import {
   createOrderResponseSchema,
   identitySessionResponseSchema,
   meResponseSchema,
   orderResponseSchema,
   plansResponseSchema,
-} from '../schemas/schemas';
+} from '@/api/schemas/schemas';
 
 type RequestOptions<S extends z.ZodType> = {
   endpoint: Endpoint;

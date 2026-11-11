@@ -1,4 +1,4 @@
-import { intlTag, type Locale } from '../locale/locale';
+import { intlTag, type Locale } from '@/domain/locale/locale';
 
 export function grossCents(priceNet: number, vatRate: number): number {
   return Math.round(priceNet * (1 + vatRate));

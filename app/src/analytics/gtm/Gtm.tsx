@@ -1,6 +1,6 @@
 import Script from 'next/script';
 
-import { getConfig } from '../../config';
+import { getConfig } from '@/config';
 
 // Consent default (all denied) goes into dataLayer before the GTM script loads (07, Q5).
 export const consentDefaultSnippet = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});`;

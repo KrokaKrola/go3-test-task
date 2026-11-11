@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { isApiError } from '../errors/errors';
+import { isApiError } from '@/api/errors/errors';
 import {
   REQUEST_TIMEOUT_MS,
   createIdentitySession,
@@ -9,7 +9,7 @@ import {
   getPlans,
   request,
 } from './client';
-import { createOrderResponseSchema } from '../schemas/schemas';
+import { createOrderResponseSchema } from '@/api/schemas/schemas';
 
 vi.stubEnv('NEXT_PUBLIC_API_BASE', 'http://localhost:4010');
 vi.stubEnv('NEXT_PUBLIC_ACCOUNT_URL', 'http://localhost:3000/account');

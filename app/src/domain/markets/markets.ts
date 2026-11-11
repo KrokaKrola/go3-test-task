@@ -1,4 +1,4 @@
-import type { Locale } from '../locale/locale';
+import type { Locale } from '@/domain/locale/locale';
 
 export type Market = 'ee' | 'lv' | 'lt';
 export type Pair = Readonly<{ market: Market; locale: Locale }>;

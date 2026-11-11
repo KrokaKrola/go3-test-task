@@ -57,6 +57,7 @@ Sources: Brief = `docs/01-product-brief.md`, API = `docs/02-api-notes.md`, CMS =
 | Q43 | Docs don't define the `activeSubscription` shape, its "none" value, the `plans` wrapper, the order `status` field name, or success status codes. | Backend | Mock shapes: `activeSubscription` `null` when none, `{market, plans[]}`, `status` field, any 2xx = success. |
 | Q44 | Docs don't say which PlanPage fields are required or how cards are ordered. | CMS + Marketing | Required: `headline`, `legalText`, `title` on a rendered card; empty → build fails for an enabled market. Others optional, hidden when empty. Card order = CMS order. |
 | Q45 | An API plan with no CMS card has no title or bullets. | CMS + Product | Build fails for an enabled market. |
+| Q63 | 08 Routes says the switcher changes language within a market, but not what happens on a deeper path (`/{m}/{l}/review/`) or with a query string. | Product | Switcher swaps only the locale segment and keeps the rest of the path and the query string; flow state survives (store/sessionStorage). |
 
 ## P2: quality and non-functional
 

@@ -1,4 +1,4 @@
-import { persistUtm } from '../utm/utm';
+import { persistUtm } from '@/flow/utm/utm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildReturnUrl, parseFlowParams, resolveFlowParams, saveStoredParams } from './context';
 import type { FlowParams } from './context';

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Gtm, consentDefaultSnippet } from './Gtm';
 
 const config = vi.hoisted(() => ({ GTM_ID: undefined as string | undefined }));
-vi.mock('../../config', () => ({ getConfig: () => config }));
+vi.mock('@/config', () => ({ getConfig: () => config }));
 
 vi.mock('next/script', () => ({
   default: ({

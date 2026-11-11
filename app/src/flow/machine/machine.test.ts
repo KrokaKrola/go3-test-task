@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { ApiError, ApiErrorKind } from '../../api/errors/errors';
-import { API_ERROR_KINDS } from '../../api/errors/errors';
+import type { ApiError, ApiErrorKind } from '@/api/errors/errors';
+import { API_ERROR_KINDS } from '@/api/errors/errors';
 import { initialState, reduce } from './machine';
 import type { FlowContext, FlowEffect, FlowEvent, FlowState, StateName } from './machine';
 

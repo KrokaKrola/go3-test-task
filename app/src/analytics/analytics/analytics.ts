@@ -1,8 +1,8 @@
-import type { Locale } from '../../domain/locale/locale';
-import type { Market } from '../../domain/markets/markets';
-import { UTM_KEYS } from '../../flow/utm/utm';
-import type { UtmSet } from '../../flow/utm/utm';
-import { getConsent, subscribeConsent } from '../consent/consent';
+import type { Locale } from '@/domain/locale/locale';
+import type { Market } from '@/domain/markets/markets';
+import { UTM_KEYS } from '@/flow/utm/utm';
+import type { UtmSet } from '@/flow/utm/utm';
+import { getConsent, subscribeConsent } from '@/analytics/consent/consent';
 
 export type EidPurpose = 'checkout' | 'reverify';
 

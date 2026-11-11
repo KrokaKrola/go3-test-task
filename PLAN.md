@@ -97,4 +97,11 @@ Each step is one work item from `spec/11-work-items.md`, done in one AI session.
 - Medium: bfcache flag `skipNextPlanViewed` (`analytics.ts`) is never cleared. Any `pageshow.persisted` (e.g. Review restored after Back from the payment provider) drops the next real `plan_viewed`, even after client nav to Plans. Fix: module flag `planViewedSent` (once per document load, which bfcache keeps), remove the `pageshow` listener, update Q62.
 - `clearUtm` on consent `denied` (07 "Withdrawal clears our keys"): still not built. Subscribe to consent in the CMP bridge, or as a W-05 follow-up.
 
+### Deferred from W-07 review (check later)
+
+- Known regression: `out/404.html` has no `<html lang>` (WCAG 3.1.1), since the shared root layout was removed. Fix with `experimental.globalNotFound` + `app/global-not-found.tsx` wrapped in `DocumentShell lang="et"` when the 404 page is built.
+- `e2e/smoke.spec.ts`: the test name says "/" but axe runs on the redirect target (`/ee/en/` under en-US Playwright). Check later: rename it, or also run axe on `/` with the redirect stubbed.
+- W-09: a stored flow context saved before a language switch keeps the old locale (stored beats query, `flow/context.ts`), so the eID or payment return lands in the old language. Save the context at eID start, or update the stored locale on switch (Q63).
+- W-10: strip `?notice=` with `history.replaceState(null, '', url)` or `router.replace`, never `replaceState(history.state, …)`. Next ignores the latter (its `__NA` state), so `useSearchParams` and the switcher href keep the old query.
+
 Record every cut in README "What I cut".

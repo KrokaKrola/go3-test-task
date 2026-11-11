@@ -1,7 +1,7 @@
-import type { ApiError, ApiErrorKind } from '../../api/errors/errors';
-import type { MeResponse, OrderResponse } from '../../api/schemas/schemas';
-import type { Locale } from '../../domain/locale/locale';
-import type { Market } from '../../domain/markets/markets';
+import type { ApiError, ApiErrorKind } from '@/api/errors/errors';
+import type { MeResponse, OrderResponse } from '@/api/schemas/schemas';
+import type { Locale } from '@/domain/locale/locale';
+import type { Market } from '@/domain/markets/markets';
 
 export type Notice = 'payment_cancelled' | 'payment_declined' | 'plan_unavailable';
 

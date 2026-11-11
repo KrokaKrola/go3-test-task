@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { createFlowStore } from './store';
-import type { FlowContext } from '../machine/machine';
+import type { FlowContext } from '@/flow/machine/machine';
 
 const ctx: FlowContext = {
   market: 'ee',
