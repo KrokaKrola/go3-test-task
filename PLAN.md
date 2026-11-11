@@ -80,11 +80,16 @@ Each step is one work item from `spec/11-work-items.md`, done in one AI session.
 
 - Server-side `purchase` (GA4 Measurement Protocol from the payment webhook, attribution ids on the order). Gaps it would close stay listed in `spec/07-analytics.md`.
 - Extra analytics events beyond marketing's six (failures, resume, errors, click ids, `items[]`, field INP).
+- Partial `returnUrl` salvage (W-05 review): an invalid `market`/`locale` pair in the query drops the query `orderId` and UTMs too, even when stored context has a valid pair. Low risk: the mock returns our own params unchanged (Q61).
 
 ### Deferred from W-04 review (check later)
 
 - Low: the flow store keeps only the last dispatch's effects, so two dispatches before the runner reads lose the first set. The runner must read through synchronous `subscribe`, or `dispatch` must return the effects. Check when the effect runner is built.
 - `startEidSession` effect carries only `planId`. `returnUrl` also needs market, locale and `reverifyOrderId` (04 inv 5). Check when W-09 wires eID start.
 - Stale results: `orderLoaded`/`orderFailed` carry no `orderId`, so a late result from another fetch (polling tick, double `retryCheck`) is accepted. Add `orderId` to these events and ignore mismatches. Check when the polling runner is built.
+
+### Deferred from W-05 review (check later)
+
+- `clearUtm` on consent withdrawal (07 "Withdrawal clears our keys"): build in W-06 with the consent adapter.
 
 Record every cut in README "What I cut".
